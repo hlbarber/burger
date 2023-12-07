@@ -19,8 +19,8 @@ where
         ready(&self.closure)
     }
 
-    fn call<'a>(guard: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-        guard(request)
+    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
+        permit(request)
     }
 }
 

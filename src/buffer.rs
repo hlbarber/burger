@@ -1,102 +1,83 @@
 use std::{
     future::Future,
     pin::Pin,
-    task::{Context, Poll},
+    task::{ready, Context, Poll},
 };
 
-use futures_util::future::Ready;
-use tokio::sync::{
-    mpsc::{error::TrySendError, Permit},
-    oneshot,
-};
+use async_lock::{Semaphore, SemaphoreGuard};
+use futures_util::future::MaybeDone;
+use pin_project_lite::pin_project;
 
-use crate::Service;
+use crate::{oneshot::Oneshot, Service, ServiceExt};
 
-pub struct Buffer<S, Request>
-where
-    S: Service<Request> + 'static,
-{
-    sender: tokio::sync::mpsc::Sender<BufferItem<Request, <S::Future<'static> as Future>::Output>>,
+pub struct Buffer<S> {
     inner: S,
+    semaphore: Semaphore,
 }
 
-pub struct BufferAcquireError;
-
-pub struct BufferPermit<'a, Inner, Request, Response> {
-    inner: Inner,
-    reserved: Permit<'a, BufferItem<Request, Response>>,
-}
-
-pin_project_lite::pin_project! {
-    #[project = BufferAcquireInnerProj]
-    enum BufferAcquireInner<'a, Inner, Item> {
-        Success {
-            #[pin]
-            inner: Inner,
-            reserved: Permit<'a, Item>
-        },
-        Failure
-    }
-}
-
-struct BufferItem<Request, Response> {
-    request: Request,
-    sender: oneshot::Sender<Response>,
-}
-
-pin_project_lite::pin_project! {
-    pub struct BufferAcquire<'a, Inner, Request, Response> {
-        #[pin]
-        inner: BufferAcquireInner<'a, Inner, BufferItem<Request, Response>>,
-    }
-}
-
-impl<'a, Inner, Request, Response> Future for BufferAcquire<'a, Inner, Request, Response>
-where
-    Inner: Future,
-{
-    type Output = Result<BufferPermit<'a, Inner::Output, Request, Response>, BufferAcquireError>;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let this = self.project();
-        match this.inner.project() {
-            BufferAcquireInnerProj::Success { inner, reserved } => todo!(),
-            BufferAcquireInnerProj::Failure => Poll::Ready(Err(BufferAcquireError)),
+impl<S> Buffer<S> {
+    pub(crate) fn new(inner: S, capacity: usize) -> Self {
+        Self {
+            inner,
+            semaphore: Semaphore::new(capacity),
         }
     }
 }
 
-type ReserveResult<'a, Request> = Result<Permit<'a, Request>, TrySendError<()>>;
+pub struct BufferPermit<'a, S> {
+    inner: &'a S,
+    _semaphore_permit: SemaphoreGuard<'a>,
+}
 
-impl<S, Request> Service<Request> for Buffer<S, Request>
+pin_project! {
+    pub struct BufferAcquire<'a, S>
+    {
+        inner: Option<&'a S>,
+        #[pin]
+        semaphore_acquire: MaybeDone<async_lock::futures::Acquire<'a>>
+    }
+}
+
+impl<'a, S> Future for BufferAcquire<'a, S> {
+    type Output = BufferPermit<'a, S>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut this = self.as_mut().project();
+        ready!(this.semaphore_acquire.as_mut().poll(cx));
+        Poll::Ready(BufferPermit {
+            inner: this
+                .inner
+                .take()
+                .expect("futures cannot be polled after completion"),
+            _semaphore_permit: this
+                .semaphore_acquire
+                .as_mut()
+                .take_output()
+                .expect("futures cannot be polled after completion"),
+        })
+    }
+}
+
+impl<Request, S> Service<Request> for Buffer<S>
 where
-    S: Service<Request> + 'static,
+    S: Service<Request>,
 {
-    type Future<'a> = S::Future<'a>
+    type Future<'a> = Oneshot<'a, S, Request> where S: 'a;
+    type Permit<'a> = BufferPermit<'a, S>
     where
-        Self: 'a;
-
-    type Permit<'a> = Result<BufferPermit<'a, S::Permit<'a>, Request, <S::Future<'a> as Future>::Output>, BufferAcquireError>
+        S: 'a;
+    type Acquire<'a> = BufferAcquire<'a, S>
     where
-        Self: 'a;
-
-    type Acquire<'a> = BufferAcquire<'a, S::Acquire<'a>, Request, <S::Future<'a> as Future>::Output>
-    where
-        Self: 'a;
+        S: 'a;
 
     fn acquire(&self) -> Self::Acquire<'_> {
         BufferAcquire {
-            inner: match self.sender.try_reserve() {
-                Ok(reserved) => BufferAcquireInner::Success {
-                    inner: self.inner.acquire(),
-                    reserved,
-                },
-                Err(_) => BufferAcquireInner::Failure,
-            },
+            inner: Some(&self.inner),
+            semaphore_acquire: MaybeDone::Future(self.semaphore.acquire()),
         }
     }
 
-    fn call<'a>(guard: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-        todo!()
+    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
+        permit.inner.oneshot(request)
     }
 }

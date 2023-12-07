@@ -1,5 +1,5 @@
 use std::{
-    future::Future,
+    future::{ready, Future, Ready},
     pin::Pin,
     task::{ready, Context, Poll},
 };
@@ -76,5 +76,34 @@ where
             };
             this.state.as_mut().project_replace(new_state);
         }
+    }
+}
+
+pub(crate) struct Depressurize<S> {
+    pub(crate) inner: S,
+}
+
+impl<Request, S> Service<Request> for Depressurize<S>
+where
+    S: Service<Request>,
+{
+    type Future<'a> = Oneshot<'a, S, Request>
+    where
+        S: 'a;
+
+    type Permit<'a> = &'a S
+    where
+        S: 'a;
+
+    type Acquire<'a> = Ready<Self::Permit<'a>>
+    where
+        S: 'a;
+
+    fn acquire(&self) -> Self::Acquire<'_> {
+        ready(&self.inner)
+    }
+
+    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
+        oneshot(request, permit)
     }
 }

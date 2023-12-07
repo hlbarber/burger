@@ -9,8 +9,14 @@ use futures_util::{future::Then as ThenFuture, FutureExt};
 use crate::Service;
 
 pub struct Then<S, F> {
-    pub(crate) inner: S,
-    pub(crate) closure: F,
+    inner: S,
+    closure: F,
+}
+
+impl<S, F> Then<S, F> {
+    pub(crate) fn new(inner: S, closure: F) -> Self {
+        Self { inner, closure }
+    }
 }
 
 pub struct ThenPermit<'a, Inner, F> {
@@ -59,7 +65,7 @@ where
         }
     }
 
-    fn call<'a>(guard: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-        S::call(guard.inner, request).then(guard.closure)
+    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
+        S::call(permit.inner, request).then(permit.closure)
     }
 }

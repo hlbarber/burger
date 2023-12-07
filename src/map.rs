@@ -9,8 +9,14 @@ use futures_util::{future::Map as MapFuture, FutureExt};
 use crate::Service;
 
 pub struct Map<S, F> {
-    pub(crate) inner: S,
-    pub(crate) closure: F,
+    inner: S,
+    closure: F,
+}
+
+impl<S, F> Map<S, F> {
+    pub(crate) fn new(inner: S, closure: F) -> Self {
+        Self { inner, closure }
+    }
 }
 
 pub struct MapPermit<'a, Inner, F> {
@@ -58,7 +64,7 @@ where
         }
     }
 
-    fn call<'a>(guard: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-        S::call(guard.inner, request).map(guard.closure)
+    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
+        S::call(permit.inner, request).map(permit.closure)
     }
 }

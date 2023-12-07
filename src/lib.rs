@@ -1,13 +1,15 @@
-// mod boxed;
-// mod buffer;
+mod buffer;
 mod limit;
 mod load_shed;
 mod map;
 mod oneshot;
+mod ready_cache;
 mod service_fn;
 mod then;
 
+pub use buffer::*;
 pub use limit::*;
+pub use load_shed::*;
 pub use map::*;
 pub use oneshot::*;
 pub use service_fn::*;
@@ -29,7 +31,7 @@ pub trait Service<Request> {
 
     fn acquire(&self) -> Self::Acquire<'_>;
 
-    fn call<'a>(guard: Self::Permit<'a>, request: Request) -> Self::Future<'a>;
+    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a>;
 }
 
 pub trait ServiceExt<Request>: Service<Request> {
@@ -44,31 +46,66 @@ pub trait ServiceExt<Request>: Service<Request> {
     where
         Self: Sized,
     {
-        Then {
-            inner: self,
-            closure,
-        }
+        Then::new(self, closure)
     }
 
     fn map<F>(self, closure: F) -> Map<Self, F>
     where
         Self: Sized,
     {
-        Map {
-            inner: self,
-            closure,
-        }
+        Map::new(self, closure)
     }
 
     fn concurrency_limit(self, n_permits: usize) -> ConcurrencyLimit<Self>
     where
         Self: Sized,
     {
-        ConcurrencyLimit {
-            inner: self,
-            semaphore: async_lock::Semaphore::new(n_permits),
-        }
+        ConcurrencyLimit::new(self, n_permits)
+    }
+
+    // fn rate_limit(self, interval: Duration, n_permits: usize) -> RateLimit<Self>
+    // where
+    //     Self: Sized,
+    // {
+    //     RateLimit::new(self, interval, n_permits)
+    // }
+
+    fn load_shed(self) -> LoadShed<Self>
+    where
+        Self: Sized,
+    {
+        LoadShed::new(self)
+    }
+
+    fn buffer(self, capacity: usize) -> Buffer<Self>
+    where
+        Self: Sized,
+    {
+        Buffer::new(self, capacity)
     }
 }
 
 impl<S, Request> ServiceExt<Request> for S where S: Service<Request> {}
+
+// impl<'b, Request, S> Service<Request> for &'b S
+// where
+//     S: Service<Request>,
+// {
+//     type Future<'a> = S::Future<'a>
+//     where
+//         S: 'a;
+//     type Permit<'a> = S::Permit<'a>
+//     where
+//         S: 'a;
+//     type Acquire<'a> = S::Acquire<'a>
+//     where
+//         S: 'a;
+
+//     fn acquire(&self) -> Self::Acquire<'_> {
+//         <S as Service<Request>>::acquire(&self)
+//     }
+
+//     fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
+//         <S as Service<Request>>::call(permit, request)
+//     }
+// }
