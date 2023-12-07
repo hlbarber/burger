@@ -5,33 +5,37 @@ use futures_util::{
 
 use crate::Service;
 
-pub struct ReadyCache<S> {
-    services: Vec<S>,
+pub struct ReadyCache<I> {
+    services: I,
 }
 
-impl<Request, S> Service<Request> for ReadyCache<S>
+impl<Request, I, S> Service<Request> for ReadyCache<I>
 where
-    S: Service<Request>,
+    for<'a> &'a I: IntoIterator<Item = &'a S>,
+    I: 'static,
+    S: Service<Request> + 'static,
     for<'a> S::Acquire<'a>: Unpin,
 {
-    type Future<'a> = S::Future<'a>
+    type Future<'a> = S::Future<'a> 
     where
-        S: 'a;
-
+        I: 'a;
     type Permit<'a> = S::Permit<'a>
     where
-       S: 'a;
-
+        I: 'a;
     type Acquire<'a> = Map<SelectAll<S::Acquire<'a>>, fn((S::Permit<'a>, usize, Vec<S::Acquire<'a>>)) -> S::Permit<'a>>
     where
-        S: 'a;
+        I: 'a;
 
-    fn acquire(&self) -> Self::Acquire<'_> {
-        let iter = self.services.iter().map(|s| s.acquire());
+    fn acquire<'a>(&'a self) -> Self::Acquire<'a> {
+        let iter = self.services.into_iter().map(|s| s.acquire());
         select_all(iter).map(|(permit, _, _)| permit)
     }
 
     fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
         S::call(permit, request)
     }
+}
+
+pub fn ready_cache<I: IntoIterator>(services: I) -> ReadyCache<I> {
+    ReadyCache { services }
 }

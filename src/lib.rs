@@ -86,26 +86,3 @@ pub trait ServiceExt<Request>: Service<Request> {
 }
 
 impl<S, Request> ServiceExt<Request> for S where S: Service<Request> {}
-
-// impl<'b, Request, S> Service<Request> for &'b S
-// where
-//     S: Service<Request>,
-// {
-//     type Future<'a> = S::Future<'a>
-//     where
-//         S: 'a;
-//     type Permit<'a> = S::Permit<'a>
-//     where
-//         S: 'a;
-//     type Acquire<'a> = S::Acquire<'a>
-//     where
-//         S: 'a;
-
-//     fn acquire(&self) -> Self::Acquire<'_> {
-//         <S as Service<Request>>::acquire(&self)
-//     }
-
-//     fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-//         <S as Service<Request>>::call(permit, request)
-//     }
-// }
