@@ -3,7 +3,8 @@ mod limit;
 mod load_shed;
 mod map;
 mod oneshot;
-mod ready_cache;
+mod retry;
+mod select;
 mod service_fn;
 mod then;
 
@@ -12,6 +13,8 @@ pub use limit::*;
 pub use load_shed::*;
 pub use map::*;
 pub use oneshot::*;
+pub use retry::*;
+pub use select::*;
 pub use service_fn::*;
 pub use then::*;
 
@@ -82,6 +85,13 @@ pub trait ServiceExt<Request>: Service<Request> {
         Self: Sized,
     {
         Buffer::new(self, capacity)
+    }
+
+    fn retry<P>(self, policy: P) -> Retry<Self, P>
+    where
+        Self: Sized,
+    {
+        Retry::new(self, policy)
     }
 }
 

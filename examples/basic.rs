@@ -13,6 +13,7 @@ async fn main() {
     .concurrency_limit(1)
     .buffer(2)
     .load_shed();
+
     let x = join! {
         svc.oneshot(()),
         svc.oneshot(()),

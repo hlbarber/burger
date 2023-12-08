@@ -5,11 +5,11 @@ use futures_util::{
 
 use crate::Service;
 
-pub struct ReadyCache<I> {
+pub struct Select<I> {
     services: I,
 }
 
-impl<Request, I, S> Service<Request> for ReadyCache<I>
+impl<Request, I, S> Service<Request> for Select<I>
 where
     for<'a> &'a I: IntoIterator<Item = &'a S>,
     I: 'static,
@@ -36,6 +36,6 @@ where
     }
 }
 
-pub fn ready_cache<I: IntoIterator>(services: I) -> ReadyCache<I> {
-    ReadyCache { services }
+pub fn select<I: IntoIterator>(services: I) -> Select<I> {
+    Select { services }
 }
