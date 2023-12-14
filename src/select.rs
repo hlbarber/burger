@@ -8,7 +8,7 @@ pub struct Select<I> {
 
 impl<Request, I, S> Service<Request> for Select<I>
 where
-    for<'a> &'a I: IntoIterator<Item = &'a S>,
+    for<'a> &'a I: IntoIterator<Item = &'a S> + 'a,
     I: 'static,
     S: Service<Request, acquire(): Unpin> + 'static,
 {

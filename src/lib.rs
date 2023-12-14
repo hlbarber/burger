@@ -1,7 +1,7 @@
 #![feature(return_type_notation)]
 
 mod buffer;
-mod limit;
+mod concurrency_limit;
 mod load_shed;
 mod map;
 mod oneshot;
@@ -11,7 +11,7 @@ mod service_fn;
 mod then;
 
 pub use buffer::*;
-pub use limit::*;
+pub use concurrency_limit::*;
 pub use load_shed::*;
 pub use map::*;
 pub use oneshot::*;
@@ -31,6 +31,7 @@ pub trait Service<Request> {
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_>;
 
     // `Self::Response<'a>` does not need `Self: 'a`.
+    // https://github.com/rust-lang/rust/issues/87479
     fn _silence_incorrect_lint(_: &Self::Response<'_>) {}
 }
 
@@ -62,13 +63,6 @@ pub trait ServiceExt<Request>: Service<Request> {
     {
         ConcurrencyLimit::new(self, n_permits)
     }
-
-    // fn rate_limit(self, interval: Duration, n_permits: usize) -> RateLimit<Self>
-    // where
-    //     Self: Sized,
-    // {
-    //     RateLimit::new(self, interval, n_permits)
-    // }
 
     fn load_shed(self) -> LoadShed<Self>
     where
