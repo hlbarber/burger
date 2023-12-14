@@ -18,7 +18,7 @@ where
     type Response = S::Response;
     type Permit<'a> = S::Permit<'a>
     where
-        S: 'a, I: 'a;
+        S: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         let iter = self.services.into_iter().map(|s| s.acquire());
