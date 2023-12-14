@@ -28,9 +28,9 @@ pub trait Service<Request> {
 
     async fn acquire(&self) -> Self::Permit<'_>;
 
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a>;
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_>;
 
-    // `Self::Response` does not need `Self: 'a`
+    // `Self::Response<'a>` does not need `Self: 'a`.
     fn _silence_incorrect_lint(_: &Self::Response<'_>) {}
 }
 

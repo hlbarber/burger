@@ -51,7 +51,7 @@ where
         }
     }
 
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
         let RetryPermit {
             service,
             policy,

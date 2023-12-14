@@ -29,7 +29,7 @@ where
         self.inner.acquire().now_or_never()
     }
 
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
         if let Some(permit) = permit {
             Ok(S::call(permit, request).await)
         } else {

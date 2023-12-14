@@ -17,13 +17,13 @@ where
     where
         I: 'a;
 
-    async fn acquire<'a>(&'a self) -> Self::Permit<'a> {
+    async fn acquire(&self) -> Self::Permit<'_> {
         let iter = self.services.into_iter().map(|s| s.acquire());
         let (permit, _, _) = select_all(iter).await;
         permit
     }
 
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
         S::call(permit, request).await
     }
 }

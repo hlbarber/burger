@@ -47,10 +47,10 @@ where
 
 #[tokio::main]
 async fn main() {
-    let ref x = AtomicUsize::new(198);
+    let x = &AtomicUsize::new(198);
     service_fn(|()| async move {
-        let y = x.fetch_add(1, Ordering::SeqCst);
-        y
+        
+        x.fetch_add(1, Ordering::SeqCst)
     })
     .retry(FiniteRetries(4))
     .oneshot(())
