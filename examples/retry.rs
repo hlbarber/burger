@@ -1,27 +1,31 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use burger::{service_fn, Policy, Service, ServiceExt};
+use burger::{retry::Policy, service_fn::service_fn, Service, ServiceExt};
 
 struct FiniteRetries(usize);
 
 struct Attempts<'a> {
     max: &'a usize,
+    request: Request,
     attempted: usize,
 }
 
 #[derive(Debug)]
 struct MaxAttempts;
 
-impl<S> Policy<S, ()> for FiniteRetries
+#[derive(Clone)]
+struct Request;
+
+impl<S> Policy<S, Request> for FiniteRetries
 where
-    S: Service<(), Response = usize>,
+    S: Service<Request, Response = Result<usize, MaxAttempts>>,
 {
     type RequestState<'a> = Attempts<'a>;
-    type Error = MaxAttempts;
 
-    fn create(&self, _request: &()) -> Attempts {
+    fn create(&self, request: &Request) -> Attempts {
         Attempts {
             max: &self.0,
+            request: request.clone(),
             attempted: 0,
         }
     }
@@ -29,28 +33,29 @@ where
     async fn classify<'a>(
         &self,
         mut state: Self::RequestState<'a>,
-        response: &<S as Service<()>>::Response,
-    ) -> Result<Option<((), Self::RequestState<'a>)>, Self::Error> {
-        if *response == 200 {
-            return Ok(None);
+        response: S::Response,
+    ) -> Result<S::Response, (Request, Attempts<'a>)> {
+        if let Ok(200) | Err(_) = response {
+            return Ok(response);
         }
 
         state.attempted += 1;
-
         if state.attempted >= *state.max {
-            return Err(MaxAttempts);
+            return Ok(Err(MaxAttempts));
         }
 
-        Ok(Some(((), state)))
+        Err((state.request.clone(), state))
     }
 }
 
 #[tokio::main]
 async fn main() {
     let counter = &AtomicUsize::new(198);
-    service_fn(|()| async move { counter.fetch_add(1, Ordering::SeqCst) })
+    let value = service_fn(|_request| async move { counter.fetch_add(1, Ordering::SeqCst) })
+        .map(Ok)
         .retry(FiniteRetries(4))
-        .oneshot(())
+        .oneshot(Request)
         .await
         .unwrap();
+    println!("{value}");
 }

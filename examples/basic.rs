@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use burger::{service_fn, ServiceExt};
+use burger::{service_fn::service_fn, ServiceExt};
 use futures_util::join;
 use tokio::time::sleep;
 
