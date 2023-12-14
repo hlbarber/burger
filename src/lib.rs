@@ -81,4 +81,23 @@ pub trait ServiceExt<Request>: Service<Request> {
     }
 }
 
-impl<S, Request> ServiceExt<Request> for S where S: Service<Request> {}
+impl<Request, S> ServiceExt<Request> for S where S: Service<Request> {}
+
+// This doesn't work
+// impl<'t, Request, S> Service<Request> for &'t S
+// where
+//     S: Service<Request>,
+// {
+//     type Response = S::Response;
+//     type Permit<'a> = S::Permit<'t>
+//     where
+//         't: 'a;
+
+//     async fn acquire(&self) -> Self::Permit<'_> {
+//         todo!()
+//     }
+
+//     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
+//         todo!()
+//     }
+// }
