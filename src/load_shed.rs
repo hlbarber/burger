@@ -1,9 +1,4 @@
-use std::future::{ready, Future, Ready};
-
-use futures_util::{
-    future::{Either, Map},
-    FutureExt,
-};
+use futures_util::FutureExt;
 
 use crate::Service;
 
@@ -21,37 +16,24 @@ impl<S> LoadShed<S> {
 #[non_exhaustive]
 pub struct Shed;
 
-type NewOutput<'a, S, Request> =
-    Result<<<S as Service<Request>>::Future<'a> as Future>::Output, Shed>;
-
 impl<Request, S> Service<Request> for LoadShed<S>
 where
     S: Service<Request>,
 {
-    type Future<'a> = Either<
-        Map<S::Future<'a>, fn(<S::Future<'a> as Future>::Output) -> NewOutput<'a, S, Request>>,
-        Ready<NewOutput<'a, S, Request>>
-    >
-    where
-        Self: 'a;
-
+    type Response<'a> = Result<S::Response<'a>, Shed>;
     type Permit<'a> = Option<S::Permit<'a>>
     where
-        Self: 'a;
+        S: 'a;
 
-    type Acquire<'a> = Ready<Self::Permit<'a>>
-    where
-        Self: 'a;
-
-    fn acquire(&self) -> Self::Acquire<'_> {
-        ready(self.inner.acquire().now_or_never())
+    async fn acquire(&self) -> Self::Permit<'_> {
+        self.inner.acquire().now_or_never()
     }
 
-    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a> {
         if let Some(permit) = permit {
-            Either::Left(S::call(permit, request).map(Ok))
+            Ok(S::call(permit, request).await)
         } else {
-            Either::Right(ready(Err(Shed)))
+            Err(Shed)
         }
     }
 }

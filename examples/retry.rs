@@ -1,66 +1,59 @@
-use std::{
-    future::{ready, Future, Ready},
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use burger::{service_fn, Policy, Service, ServiceExt};
 
-struct FiniteRetries {
-    max_retries: usize,
+struct FiniteRetries(usize);
+
+struct Attempts<'a> {
+    max: &'a usize,
+    attempted: usize,
 }
-struct Attempts(usize);
 
 #[derive(Debug)]
 struct MaxAttempts;
 
-impl<S, Request> Policy<S, Request> for FiniteRetries
+impl<S> Policy<S, ()> for FiniteRetries
 where
-    S: Service<Request>,
-    // https://github.com/rust-lang/rust/issues/49601
-    // for<'a> S::Future<'a>: Future<Output = &'a str>,
-    for<'a> S::Future<'a>: Future<Output = usize>,
-    Request: Clone,
+    for<'a> S: Service<(), Response<'a> = usize>,
 {
-    type RequestState<'a> = Attempts;
-    type Future<'a> = Ready<Result<(), Request>>;
-    type Error<'a> = MaxAttempts;
+    type RequestState<'a> = Attempts<'a>;
+    type Error = MaxAttempts;
 
-    fn create(&self, request: &Request) -> (Attempts, Request) {
-        (Attempts(self.max_retries), request.clone())
+    fn create(&self, _request: &()) -> Attempts {
+        Attempts {
+            max: &self.0,
+            attempted: 0,
+        }
     }
 
-    fn classify(
+    async fn classify<'a>(
         &self,
-        state: &mut Attempts,
-        request: &Request,
-        response: &<<S as Service<Request>>::Future<'_> as futures_util::Future>::Output,
-    ) -> Self::Future<'_> {
-        let result = if *response != 200 && state.0.checked_sub(1).is_none() {
-            Ok(())
-        } else {
-            Err(request.clone())
-        };
-        ready(result)
-    }
+        mut state: Self::RequestState<'a>,
+        response: &<S as Service<()>>::Response<'_>,
+    ) -> Result<Option<((), Self::RequestState<'a>)>, Self::Error> {
+        if *response == 200 {
+            return Ok(None);
+        }
 
-    fn error(&self, _state: Attempts) -> Self::Error<'_> {
-        MaxAttempts
+        state.attempted += 1;
+
+        if state.attempted >= *state.max {
+            return Err(MaxAttempts);
+        }
+
+        Ok(Some(((), state)))
     }
 }
 
 #[tokio::main]
 async fn main() {
-    let x = AtomicUsize::new(198);
-    let svc = service_fn(move |()| {
-        // let x = x;
-        let x = &x;
-        async move {
-            let y = x.fetch_add(1, Ordering::SeqCst);
-            println!("{y}");
-            y
-        }
-    });
-    let svc = svc.retry(FiniteRetries { max_retries: 5 });
-    let x = svc.oneshot(()).await.unwrap();
-    drop(x);
+    let ref x = AtomicUsize::new(198);
+    service_fn(|()| async move {
+        let y = x.fetch_add(1, Ordering::SeqCst);
+        y
+    })
+    .retry(FiniteRetries(4))
+    .oneshot(())
+    .await
+    .unwrap();
 }

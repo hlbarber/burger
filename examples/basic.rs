@@ -10,6 +10,7 @@ async fn main() {
         sleep(Duration::from_secs(5)).await;
         "foo"
     })
+    .then(|output| async move { output })
     .concurrency_limit(1)
     .buffer(2)
     .load_shed();

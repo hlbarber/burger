@@ -1,12 +1,4 @@
-use std::{
-    future::Future,
-    pin::Pin,
-    task::{ready, Context, Poll},
-};
-
-use async_lock::{Semaphore, SemaphoreGuard};
-use futures_util::future::MaybeDone;
-use pin_project_lite::pin_project;
+use tokio::sync::{Semaphore, SemaphorePermit};
 
 use crate::Service;
 
@@ -26,88 +18,26 @@ impl<S> ConcurrencyLimit<S> {
 
 pub struct ConcurrencyLimitPermit<'a, Inner> {
     inner: Inner,
-    semaphore_permit: SemaphoreGuard<'a>,
-}
-
-pin_project! {
-    pub struct ConcurencyLimitAcquire<'a, Inner>
-    where
-        Inner: Future
-    {
-        #[pin]
-        inner: MaybeDone<Inner>,
-        #[pin]
-        semaphore_acquire: MaybeDone<async_lock::futures::Acquire<'a>>
-    }
-}
-
-impl<'a, Inner> Future for ConcurencyLimitAcquire<'a, Inner>
-where
-    Inner: Future,
-{
-    type Output = ConcurrencyLimitPermit<'a, Inner::Output>;
-
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut this = self.as_mut().project();
-        ready!(this.inner.as_mut().poll(cx));
-        ready!(this.semaphore_acquire.as_mut().poll(cx));
-        Poll::Ready(ConcurrencyLimitPermit {
-            inner: this
-                .inner
-                .as_mut()
-                .take_output()
-                .expect("futures cannot be polled after completion"),
-            semaphore_permit: this
-                .semaphore_acquire
-                .as_mut()
-                .take_output()
-                .expect("futures cannot be polled after completion"),
-        })
-    }
-}
-
-pin_project! {
-    pub struct ConcurrencyLimitFuture<'a, Inner> {
-        #[pin]
-        inner: Inner,
-        _semaphore_permit: SemaphoreGuard<'a>,
-    }
-}
-
-impl<'a, Inner> Future for ConcurrencyLimitFuture<'a, Inner>
-where
-    Inner: Future,
-{
-    type Output = Inner::Output;
-
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.project().inner.poll(cx)
-    }
+    _semaphore_permit: SemaphorePermit<'a>,
 }
 
 impl<Request, S> Service<Request> for ConcurrencyLimit<S>
 where
     S: Service<Request>,
 {
-    type Future<'a> = ConcurrencyLimitFuture<'a, S::Future<'a>> where S: 'a;
+    type Response<'a> = S::Response<'a>;
     type Permit<'a> = ConcurrencyLimitPermit<'a, S::Permit<'a>>
     where
         S: 'a;
-    type Acquire<'a> = ConcurencyLimitAcquire<'a, S::Acquire<'a>>
-    where
-        S: 'a;
 
-    fn acquire(&self) -> Self::Acquire<'_> {
-        ConcurencyLimitAcquire {
-            inner: MaybeDone::Future(self.inner.acquire()),
-            semaphore_acquire: MaybeDone::Future(self.semaphore.acquire()),
+    async fn acquire(&self) -> Self::Permit<'_> {
+        ConcurrencyLimitPermit {
+            inner: self.inner.acquire().await,
+            _semaphore_permit: self.semaphore.acquire().await.expect("not closed"),
         }
     }
 
-    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-        ConcurrencyLimitFuture {
-            inner: S::call(permit.inner, request),
-            _semaphore_permit: permit.semaphore_permit,
-        }
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a> {
+        S::call(permit.inner, request).await
     }
 }

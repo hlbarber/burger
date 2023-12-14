@@ -1,4 +1,4 @@
-use std::future::{ready, Future, Ready};
+use std::future::Future;
 
 use crate::Service;
 
@@ -11,16 +11,15 @@ where
     F: Fn(Request) -> Fut,
     Fut: Future,
 {
-    type Future<'a> = Fut where F: 'a;
+    type Response<'a> = Fut::Output;
     type Permit<'a> = &'a F where F: 'a;
-    type Acquire<'a> = Ready<&'a F> where F: 'a;
 
-    fn acquire(&self) -> Self::Acquire<'_> {
-        ready(&self.closure)
+    async fn acquire(&self) -> Self::Permit<'_> {
+        &self.closure
     }
 
-    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-        permit(request)
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a> {
+        permit(request).await
     }
 }
 

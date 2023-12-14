@@ -1,5 +1,5 @@
 mod concurrency;
-mod rate;
+// mod rate;
 
 pub use concurrency::*;
-pub use rate::*;
+// pub use rate::*;

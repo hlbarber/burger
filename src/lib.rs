@@ -1,3 +1,5 @@
+#![feature(return_type_notation)]
+
 mod buffer;
 mod limit;
 mod load_shed;
@@ -18,31 +20,26 @@ pub use select::*;
 pub use service_fn::*;
 pub use then::*;
 
-use std::future::Future;
-
 pub trait Service<Request> {
-    type Future<'a>: Future
-    where
-        Self: 'a;
-
+    type Response<'a>;
     type Permit<'a>
     where
         Self: 'a;
-    type Acquire<'a>: Future<Output = Self::Permit<'a>>
-    where
-        Self: 'a;
 
-    fn acquire(&self) -> Self::Acquire<'_>;
+    async fn acquire(&self) -> Self::Permit<'_>;
 
-    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a>;
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a>;
+
+    // `Self::Response` does not need `Self: 'a`
+    fn _silence_incorrect_lint(_: &Self::Response<'_>) {}
 }
 
 pub trait ServiceExt<Request>: Service<Request> {
-    fn oneshot(&self, request: Request) -> Oneshot<'_, Self, Request>
+    async fn oneshot(&self, request: Request) -> Self::Response<'_>
     where
         Self: Sized,
     {
-        oneshot(request, self)
+        oneshot(request, self).await
     }
 
     fn then<F>(self, closure: F) -> Then<Self, F>

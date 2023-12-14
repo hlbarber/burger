@@ -1,7 +1,4 @@
-use futures_util::{
-    future::{select_all, Map, SelectAll},
-    FutureExt,
-};
+use futures_util::future::select_all;
 
 use crate::Service;
 
@@ -13,26 +10,21 @@ impl<Request, I, S> Service<Request> for Select<I>
 where
     for<'a> &'a I: IntoIterator<Item = &'a S>,
     I: 'static,
-    S: Service<Request> + 'static,
-    for<'a> S::Acquire<'a>: Unpin,
+    S: Service<Request, acquire(): Unpin> + 'static,
 {
-    type Future<'a> = S::Future<'a> 
-    where
-        I: 'a;
+    type Response<'a> = S::Response<'a>;
     type Permit<'a> = S::Permit<'a>
     where
         I: 'a;
-    type Acquire<'a> = Map<SelectAll<S::Acquire<'a>>, fn((S::Permit<'a>, usize, Vec<S::Acquire<'a>>)) -> S::Permit<'a>>
-    where
-        I: 'a;
 
-    fn acquire<'a>(&'a self) -> Self::Acquire<'a> {
+    async fn acquire<'a>(&'a self) -> Self::Permit<'a> {
         let iter = self.services.into_iter().map(|s| s.acquire());
-        select_all(iter).map(|(permit, _, _)| permit)
+        let (permit, _, _) = select_all(iter).await;
+        permit
     }
 
-    fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Future<'a> {
-        S::call(permit, request)
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response<'a> {
+        S::call(permit, request).await
     }
 }
 
