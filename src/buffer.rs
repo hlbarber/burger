@@ -1,3 +1,4 @@
+use futures_util::FutureExt;
 use tokio::sync::{Semaphore, SemaphorePermit};
 
 use crate::{Service, ServiceExt};
@@ -16,9 +17,19 @@ impl<S> Buffer<S> {
     }
 }
 
-pub struct BufferPermit<'a, S> {
-    inner: &'a S,
-    _semaphore_permit: SemaphorePermit<'a>,
+pub struct BufferPermit<'a, Request, S>
+where
+    S: Service<Request>,
+{
+    inner: BufferPermitInner<'a, Request, S>,
+}
+
+enum BufferPermitInner<'a, Request, S>
+where
+    S: Service<Request>,
+{
+    Eager(S::Permit<'a>),
+    Buffered(&'a S, SemaphorePermit<'a>),
 }
 
 impl<Request, S> Service<Request> for Buffer<S>
@@ -26,18 +37,26 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = BufferPermit<'a, S>
+    type Permit<'a> = BufferPermit<'a, Request, S>
     where
         S: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         BufferPermit {
-            inner: &self.inner,
-            _semaphore_permit: self.semaphore.acquire().await.expect("not closed"),
+            inner: match self.inner.acquire().now_or_never() {
+                Some(some) => BufferPermitInner::Eager(some),
+                None => BufferPermitInner::Buffered(
+                    &self.inner,
+                    self.semaphore.acquire().await.expect("not closed"),
+                ),
+            },
         }
     }
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        permit.inner.oneshot(request).await
+        match permit.inner {
+            BufferPermitInner::Eager(permit) => S::call(permit, request).await,
+            BufferPermitInner::Buffered(service, _permit) => service.oneshot(request).await,
+        }
     }
 }

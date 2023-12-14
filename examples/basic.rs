@@ -7,7 +7,7 @@ use tokio::time::sleep;
 #[tokio::main]
 async fn main() {
     let svc = service_fn(|()| async {
-        sleep(Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(1)).await;
         "foo "
     })
     .map(|output: &str| output.trim().to_string())
@@ -16,6 +16,7 @@ async fn main() {
     .load_shed();
 
     let x = join! {
+        svc.oneshot(()),
         svc.oneshot(()),
         svc.oneshot(()),
         svc.oneshot(()),
