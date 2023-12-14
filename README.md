@@ -1,3 +1,5 @@
+# Burger
+
 An experimental service framework.
 
 ## FAQ
@@ -26,7 +28,7 @@ We want to be able to pass the innards `&self` into the `Self::Permit<'_>` by re
 
 ### Why not a synchronous permit acquisition, like `tower::Service::poll_ready`?
 
-Using `Future` here allows for easy composition with the large `Future`s ecosystem. Both approaches boil down to the same kind of state machines eventually.
+Using `Future` here allows for easy composition with the large `Future`s ecosystem and with other `Service::acquire` calls. Both approaches boil down to the same kind of state machines eventually.
 
 ### Why do `async fn acquire` and `async fn call` not return a `Result`?
 

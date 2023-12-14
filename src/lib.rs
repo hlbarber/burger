@@ -1,25 +1,23 @@
 // This is used in `Select` to ensure `Unpin`.
 #![feature(return_type_notation)]
 
-mod buffer;
-mod concurrency_limit;
-mod load_shed;
-mod map;
-mod oneshot;
-mod retry;
-mod select;
-mod service_fn;
-mod then;
+pub mod buffer;
+pub mod concurrency_limit;
+pub mod load_shed;
+pub mod map;
+pub mod oneshot;
+pub mod retry;
+pub mod select;
+pub mod service_fn;
+pub mod then;
 
-pub use buffer::*;
-pub use concurrency_limit::*;
-pub use load_shed::*;
-pub use map::*;
-pub use oneshot::*;
-pub use retry::*;
-pub use select::*;
-pub use service_fn::*;
-pub use then::*;
+use buffer::Buffer;
+use concurrency_limit::ConcurrencyLimit;
+use load_shed::LoadShed;
+use map::Map;
+use oneshot::oneshot;
+use retry::Retry;
+use then::Then;
 
 pub trait Service<Request> {
     type Response;
