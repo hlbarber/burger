@@ -14,7 +14,7 @@ struct MaxAttempts;
 
 impl<S> Policy<S, ()> for FiniteRetries
 where
-    for<'a> S: Service<(), Response<'a> = usize>,
+    S: Service<(), Response = usize>,
 {
     type RequestState<'a> = Attempts<'a>;
     type Error = MaxAttempts;
@@ -29,7 +29,7 @@ where
     async fn classify<'a>(
         &self,
         mut state: Self::RequestState<'a>,
-        response: &<S as Service<()>>::Response<'_>,
+        response: &<S as Service<()>>::Response,
     ) -> Result<Option<((), Self::RequestState<'a>)>, Self::Error> {
         if *response == 200 {
             return Ok(None);

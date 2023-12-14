@@ -12,7 +12,7 @@ where
     async fn classify<'a>(
         &self,
         state: Self::RequestState<'a>,
-        response: &S::Response<'_>,
+        response: &S::Response,
     ) -> Result<Option<(Request, Self::RequestState<'a>)>, Self::Error>;
 }
 
@@ -38,7 +38,7 @@ where
     S: Service<Request>,
     P: Policy<S, Request>,
 {
-    type Response<'a> = Result<S::Response<'a>, P::Error>;
+    type Response = Result<S::Response, P::Error>;
     type Permit<'a> = RetryPermit<'a, S, P, S::Permit<'a>>
     where
         Self: 'a;
@@ -51,7 +51,7 @@ where
         }
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         let RetryPermit {
             service,
             policy,

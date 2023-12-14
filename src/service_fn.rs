@@ -11,14 +11,14 @@ where
     F: Fn(Request) -> Fut,
     Fut: Future,
 {
-    type Response<'a> = Fut::Output;
+    type Response = Fut::Output;
     type Permit<'a> = &'a F where F: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         &self.closure
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         permit(request).await
     }
 }

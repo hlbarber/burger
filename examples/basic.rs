@@ -8,9 +8,9 @@ use tokio::time::sleep;
 async fn main() {
     let svc = service_fn(|()| async {
         sleep(Duration::from_secs(5)).await;
-        "foo"
+        "foo "
     })
-    .then(|output| async move { output })
+    .map(|output: &str| output.trim().to_string())
     .concurrency_limit(1)
     .buffer(2)
     .load_shed();

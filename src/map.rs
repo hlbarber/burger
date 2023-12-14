@@ -19,9 +19,9 @@ pub struct MapPermit<'a, Inner, F> {
 impl<Request, S, F, Output> Service<Request> for Map<S, F>
 where
     S: Service<Request>,
-    for<'a> F: Fn(S::Response<'a>) -> Output,
+    F: Fn(S::Response) -> Output,
 {
-    type Response<'a> = Output;
+    type Response = Output;
     type Permit<'a> = MapPermit<'a, S::Permit<'a>, F> where S: 'a, F: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
@@ -31,7 +31,7 @@ where
         }
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         (permit.closure)(S::call(permit.inner, request).await)
     }
 }

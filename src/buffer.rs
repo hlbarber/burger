@@ -25,7 +25,7 @@ impl<Request, S> Service<Request> for Buffer<S>
 where
     S: Service<Request>,
 {
-    type Response<'a> = S::Response<'a>;
+    type Response = S::Response;
     type Permit<'a> = BufferPermit<'a, S>
     where
         S: 'a;
@@ -37,7 +37,7 @@ where
         }
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         permit.inner.oneshot(request).await
     }
 }

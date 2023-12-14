@@ -20,7 +20,7 @@ impl<Request, S> Service<Request> for LoadShed<S>
 where
     S: Service<Request>,
 {
-    type Response<'a> = Result<S::Response<'a>, Shed>;
+    type Response = Result<S::Response, Shed>;
     type Permit<'a> = Option<S::Permit<'a>>
     where
         S: 'a;
@@ -29,7 +29,7 @@ where
         self.inner.acquire().now_or_never()
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         if let Some(permit) = permit {
             Ok(S::call(permit, request).await)
         } else {

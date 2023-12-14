@@ -1,3 +1,4 @@
+// This is used in `Select` to ensure `Unpin`.
 #![feature(return_type_notation)]
 
 mod buffer;
@@ -21,22 +22,18 @@ pub use service_fn::*;
 pub use then::*;
 
 pub trait Service<Request> {
-    type Response<'a>;
+    type Response;
     type Permit<'a>
     where
         Self: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_>;
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_>;
-
-    // `Self::Response<'a>` does not need `Self: 'a`.
-    // https://github.com/rust-lang/rust/issues/87479
-    fn _silence_incorrect_lint(_: &Self::Response<'_>) {}
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response;
 }
 
 pub trait ServiceExt<Request>: Service<Request> {
-    async fn oneshot(&self, request: Request) -> Self::Response<'_>
+    async fn oneshot(&self, request: Request) -> Self::Response
     where
         Self: Sized,
     {

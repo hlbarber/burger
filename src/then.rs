@@ -21,10 +21,10 @@ pub struct ThenPermit<'a, Inner, F> {
 impl<Request, S, F, Fut> Service<Request> for Then<S, F>
 where
     S: Service<Request>,
-    for<'a> F: Fn(S::Response<'a>) -> Fut,
+    F: Fn(S::Response) -> Fut,
     Fut: Future,
 {
-    type Response<'a> = Fut::Output;
+    type Response = Fut::Output;
     type Permit<'a> = ThenPermit<'a, S::Permit<'a>, F> where S: 'a, F: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
@@ -34,7 +34,7 @@ where
         }
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response<'_> {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         (permit.closure)(S::call(permit.inner, request).await).await
     }
 }

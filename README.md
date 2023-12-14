@@ -28,16 +28,12 @@ We want to be able to pass the innards `&self` into the `Self::Permit<'_>` by re
 
 Using `Future` here allows for easy composition with the large `Future`s ecosystem. Both approaches boil down to the same kind of state machines eventually.
 
-### Why is `Service::Response<'a>` a GAT?
-
-Often performance conscious users want to take a buffer and deserialize it into a borrowed type. Rust does not have good support for self-referential types and so, without the `<'a>` on `Service::Response`, users would not be able to go from owned types to borrowed types.
-
 ### Why do `async fn acquire` and `async fn call` not return a `Result`?
 
 Most of the `Service` style combinators work without `Result`.
 
-If the user wants to write a `Service` with a fallible `async fn acquire` then they can model the permit as a `Result` and have `call` return the `Err`.
+If the user wants to write a `Service` with a fallible `async fn acquire` then they can model the permit as a `Result` and have `call` return the `Err`. If the user wants to write a infallible `acquire` and a fallible `call` the signatures are no longer coupled by convention alone.
 
 ### Why does `call` take ownership of the permit?
 
-A permit should provide one `call` as standard. Specific implementations may introduce clone to the permit.
+A permit should provide one `call` as standard. Specific implementations may introduce duplication of the permit.
