@@ -27,6 +27,7 @@ where
     }
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
+        // https://github.com/rust-lang/rust-clippy/issues/6446
         let fut = {
             let mut guard = permit?;
             guard.call(request)
