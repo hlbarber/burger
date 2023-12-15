@@ -13,7 +13,7 @@ trait Picker<S, Request> {
 
 pub struct SteerPermit<'a, S, P, Request>
 where
-    S: Service<Request> + 'a,
+    S: Service<Request>,
 {
     services: &'a [S],
     permits: Vec<S::Permit<'a>>,

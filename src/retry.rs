@@ -26,10 +26,13 @@ impl<S, P> Retry<S, P> {
     }
 }
 
-pub struct RetryPermit<'a, S, P, Inner> {
+pub struct RetryPermit<'a, S, P, Request>
+where
+    S: Service<Request>,
+{
     service: &'a S,
     policy: &'a P,
-    inner: Inner,
+    inner: S::Permit<'a>,
 }
 
 impl<Request, S, P> Service<Request> for Retry<S, P>
@@ -38,7 +41,7 @@ where
     P: Policy<S, Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = RetryPermit<'a, S, P, S::Permit<'a>>
+    type Permit<'a> = RetryPermit<'a, S, P, Request>
     where
         Self: 'a;
 

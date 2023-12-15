@@ -31,7 +31,10 @@ where
     }
 }
 
-pub fn select<S, I: IntoIterator>(services: I) -> Select<S, I> {
+pub fn select<S, I>(services: I) -> Select<S, I>
+where
+    I: IntoIterator,
+{
     Select {
         _inner: PhantomData,
         services,

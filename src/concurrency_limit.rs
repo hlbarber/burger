@@ -16,8 +16,11 @@ impl<S> ConcurrencyLimit<S> {
     }
 }
 
-pub struct ConcurrencyLimitPermit<'a, Inner> {
-    inner: Inner,
+pub struct ConcurrencyLimitPermit<'a, S, Request>
+where
+    S: Service<Request> + 'a,
+{
+    inner: S::Permit<'a>,
     _semaphore_permit: SemaphorePermit<'a>,
 }
 
@@ -26,7 +29,7 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = ConcurrencyLimitPermit<'a, S::Permit<'a>>
+    type Permit<'a> = ConcurrencyLimitPermit<'a, S, Request>
     where
         S: 'a;
 

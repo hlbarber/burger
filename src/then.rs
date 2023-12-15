@@ -13,8 +13,11 @@ impl<S, F> Then<S, F> {
     }
 }
 
-pub struct ThenPermit<'a, Inner, F> {
-    inner: Inner,
+pub struct ThenPermit<'a, S, F, Request>
+where
+    S: Service<Request> + 'a,
+{
+    inner: S::Permit<'a>,
     closure: &'a F,
 }
 
@@ -25,7 +28,7 @@ where
     Fut: Future,
 {
     type Response = Fut::Output;
-    type Permit<'a> = ThenPermit<'a, S::Permit<'a>, F> where S: 'a, F: 'a;
+    type Permit<'a> = ThenPermit<'a, S, F, Request> where S: 'a, F: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         ThenPermit {

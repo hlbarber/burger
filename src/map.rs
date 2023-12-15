@@ -11,8 +11,11 @@ impl<S, F> Map<S, F> {
     }
 }
 
-pub struct MapPermit<'a, Inner, F> {
-    inner: Inner,
+pub struct MapPermit<'a, S, F, Request>
+where
+    S: Service<Request> + 'a,
+{
+    inner: S::Permit<'a>,
     closure: &'a F,
 }
 
@@ -22,7 +25,7 @@ where
     F: Fn(S::Response) -> Output,
 {
     type Response = Output;
-    type Permit<'a> = MapPermit<'a, S::Permit<'a>, F> where S: 'a, F: 'a;
+    type Permit<'a> = MapPermit<'a, S, F, Request> where S: 'a, F: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         MapPermit {

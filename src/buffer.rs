@@ -17,14 +17,14 @@ impl<S> Buffer<S> {
     }
 }
 
-pub struct BufferPermit<'a, Request, S>
+pub struct BufferPermit<'a, S, Request>
 where
     S: Service<Request>,
 {
-    inner: BufferPermitInner<'a, Request, S>,
+    inner: BufferPermitInner<'a, S, Request>,
 }
 
-enum BufferPermitInner<'a, Request, S>
+enum BufferPermitInner<'a, S, Request>
 where
     S: Service<Request>,
 {
@@ -37,7 +37,7 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = BufferPermit<'a, Request, S>
+    type Permit<'a> = BufferPermit<'a, S, Request>
     where
         S: 'a;
 
