@@ -2,7 +2,7 @@
 #![feature(return_type_notation)]
 
 pub mod buffer;
-mod compat;
+pub mod compat;
 pub mod concurrency_limit;
 pub mod load_shed;
 pub mod map;
@@ -10,7 +10,10 @@ pub mod oneshot;
 pub mod retry;
 pub mod select;
 pub mod service_fn;
+pub mod steer;
 pub mod then;
+
+use std::sync::Arc;
 
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
@@ -84,21 +87,20 @@ pub trait ServiceExt<Request>: Service<Request> {
 
 impl<Request, S> ServiceExt<Request> for S where S: Service<Request> {}
 
-// This doesn't work
-// impl<'t, Request, S> Service<Request> for &'t S
-// where
-//     S: Service<Request>,
-// {
-//     type Response = S::Response;
-//     type Permit<'a> = S::Permit<'t>
-//     where
-//         't: 'a;
+impl<Request, S> Service<Request> for Arc<S>
+where
+    S: Service<Request>,
+{
+    type Response = S::Response;
+    type Permit<'a> = S::Permit<'a>
+    where
+        S: 'a;
 
-//     async fn acquire(&self) -> Self::Permit<'_> {
-//         todo!()
-//     }
+    async fn acquire(&self) -> Self::Permit<'_> {
+        S::acquire(&self).await
+    }
 
-//     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-//         todo!()
-//     }
-// }
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
+        S::call(permit, request).await
+    }
+}
