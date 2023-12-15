@@ -1,6 +1,6 @@
 use crate::Service;
 
-pub async fn oneshot<Request, S>(request: Request, service: &S) -> S::Response
+pub(super) async fn oneshot<Request, S>(request: Request, service: &S) -> S::Response
 where
     S: Service<Request>,
 {
