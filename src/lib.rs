@@ -2,6 +2,7 @@
 #![feature(return_type_notation)]
 
 pub mod buffer;
+#[cfg(feature = "compat")]
 pub mod compat;
 pub mod concurrency_limit;
 pub mod load_shed;
