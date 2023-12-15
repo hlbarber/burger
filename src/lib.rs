@@ -97,7 +97,7 @@ where
         S: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
-        S::acquire(&self).await
+        S::acquire(self).await
     }
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {

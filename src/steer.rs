@@ -34,7 +34,7 @@ where
         SteerPermit {
             services: &self.services,
             picker: &self.picker,
-            permits: join_all(self.services.into_iter().map(|x| x.acquire())).await,
+            permits: join_all(self.services.iter().map(|x| x.acquire())).await,
         }
     }
 

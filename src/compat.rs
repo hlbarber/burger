@@ -27,19 +27,16 @@ where
     }
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        let mut response = permit?;
-        let fut = response.call(request);
+        let fut = {
+            let mut guard = permit?;
+            guard.call(request)
+        };
         fut.await
     }
 }
 
-pub trait FromTower<Request>: TowerService<Request> {
-    fn from_tower(self) -> Compat<Self>
-    where
-        Self: Sized,
-    {
-        Compat {
-            inner: Mutex::new(self),
-        }
+pub fn compact<S>(inner: S) -> Compat<S> {
+    Compat {
+        inner: Mutex::new(inner),
     }
 }
