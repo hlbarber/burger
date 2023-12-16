@@ -32,7 +32,9 @@ pub trait Service<Request> {
 
     async fn acquire(&self) -> Self::Permit<'_>;
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response;
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
+    where
+        Self: 'a;
 }
 
 pub trait ServiceExt<Request>: Service<Request> {
@@ -106,32 +108,23 @@ where
     }
 }
 
-pub struct RefPermit<'t, 'a, S, Request>
-where
-    S: Service<Request> + 'a,
-    't: 'a,
-{
-    _x: PhantomData<&'t ()>,
-    inner: S::Permit<'a>,
-}
-
 impl<'t, Request, S> Service<Request> for &'t S
 where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = RefPermit<'t, 'a, S, Request>
+    type Permit<'a> = S::Permit<'a>
     where
-        't: 'a;
+        S:'a, 't: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
-        RefPermit {
-            _x: PhantomData,
-            inner: S::acquire(self).await,
-        }
+        S::acquire(self).await
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        S::call(permit.inner, request).await
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
+    where
+        Self: 'a,
+    {
+        S::call(permit, request).await
     }
 }

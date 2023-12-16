@@ -12,13 +12,12 @@ pub struct Select<S, I> {
 impl<Request, S, I> Service<Request> for Select<S, I>
 where
     for<'a> &'a I: IntoIterator<Item = &'a S>,
-    I: 'static,
     S: Service<Request, acquire(): Unpin>,
 {
     type Response = S::Response;
     type Permit<'a> = S::Permit<'a>
     where
-        S: 'a;
+        S: 'a, I: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         let iter = self.services.into_iter().map(|s| s.acquire());
@@ -26,7 +25,10 @@ where
         permit
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
+    where
+        Self: 'a,
+    {
         S::call(permit, request).await
     }
 }
