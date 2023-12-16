@@ -1,7 +1,10 @@
+use std::fmt;
+
 use tokio::sync::{Semaphore, SemaphorePermit};
 
 use crate::Service;
 
+#[derive(Debug)]
 pub struct ConcurrencyLimit<S> {
     inner: S,
     semaphore: Semaphore,
@@ -22,6 +25,19 @@ where
 {
     inner: S::Permit<'a>,
     _semaphore_permit: SemaphorePermit<'a>,
+}
+
+impl<'a, S, Request> fmt::Debug for ConcurrencyLimitPermit<'a, S, Request>
+where
+    S: Service<Request>,
+    S::Permit<'a>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ConcurrencyLimitPermit")
+            .field("inner", &self.inner)
+            .field("_semaphore_permit", &self._semaphore_permit)
+            .finish()
+    }
 }
 
 impl<Request, S> Service<Request> for ConcurrencyLimit<S>

@@ -1,8 +1,11 @@
+use std::fmt;
+
 use futures_util::FutureExt;
 use tokio::sync::{Semaphore, SemaphorePermit};
 
 use crate::{Service, ServiceExt};
 
+#[derive(Debug)]
 pub struct Buffer<S> {
     inner: S,
     semaphore: Semaphore,
@@ -24,12 +27,39 @@ where
     inner: BufferPermitInner<'a, S, Request>,
 }
 
+impl<'a, S, Request> fmt::Debug for BufferPermit<'a, S, Request>
+where
+    S: Service<Request>,
+    BufferPermitInner<'a, S, Request>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("BufferPermit")
+            .field("inner", &self.inner)
+            .finish()
+    }
+}
+
 enum BufferPermitInner<'a, S, Request>
 where
     S: Service<Request>,
 {
     Eager(S::Permit<'a>),
     Buffered(&'a S, SemaphorePermit<'a>),
+}
+
+impl<'a, S, Request> fmt::Debug for BufferPermitInner<'a, S, Request>
+where
+    S: Service<Request> + fmt::Debug,
+    S::Permit<'a>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Eager(arg0) => f.debug_tuple("Eager").field(arg0).finish(),
+            Self::Buffered(arg0, arg1) => {
+                f.debug_tuple("Buffered").field(arg0).field(arg1).finish()
+            }
+        }
+    }
 }
 
 impl<Request, S> Service<Request> for Buffer<S>

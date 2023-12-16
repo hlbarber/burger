@@ -2,6 +2,7 @@ use std::future::Future;
 
 use crate::Service;
 
+#[derive(Clone)]
 pub struct ServiceFn<F> {
     closure: F,
 }

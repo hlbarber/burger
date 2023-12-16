@@ -1,7 +1,8 @@
-use std::future::Future;
+use std::{any, fmt, future::Future};
 
 use crate::Service;
 
+#[derive(Debug, Clone)]
 pub struct Then<S, F> {
     inner: S,
     closure: F,
@@ -19,6 +20,19 @@ where
 {
     inner: S::Permit<'a>,
     closure: &'a F,
+}
+
+impl<'a, S, F, Request> fmt::Debug for ThenPermit<'a, S, F, Request>
+where
+    S: Service<Request>,
+    S::Permit<'a>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ThenPermit")
+            .field("inner", &self.inner)
+            .field("closure", &format_args!("{}", any::type_name::<F>()))
+            .finish()
+    }
 }
 
 impl<Request, S, F, Fut> Service<Request> for Then<S, F>

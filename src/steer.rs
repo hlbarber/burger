@@ -1,7 +1,10 @@
+use std::fmt;
+
 use futures_util::future::join_all;
 
 use crate::Service;
 
+#[derive(Debug)]
 pub struct Steer<S, P> {
     services: Box<[S]>,
     picker: P,
@@ -18,6 +21,21 @@ where
     services: &'a [S],
     permits: Vec<S::Permit<'a>>,
     picker: &'a P,
+}
+
+impl<'a, S, P, Request> fmt::Debug for SteerPermit<'a, S, P, Request>
+where
+    S: Service<Request> + fmt::Debug,
+    S::Permit<'a>: fmt::Debug,
+    P: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SteerPermit")
+            .field("services", &self.services)
+            .field("permits", &self.permits)
+            .field("picker", &self.picker)
+            .finish()
+    }
 }
 
 impl<Request, S, P> Service<Request> for Steer<S, P>

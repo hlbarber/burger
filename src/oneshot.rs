@@ -8,6 +8,7 @@ where
     S::call(permit, request).await
 }
 
+#[derive(Clone, Debug)]
 pub(crate) struct Depressurize<S> {
     pub(crate) inner: S,
 }

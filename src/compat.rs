@@ -7,6 +7,7 @@ use tower_service::Service as TowerService;
 
 use crate::Service;
 
+#[derive(Debug)]
 pub struct Compat<S> {
     inner: Mutex<S>,
 }
@@ -36,7 +37,7 @@ where
     }
 }
 
-pub fn compact<S>(inner: S) -> Compat<S> {
+pub fn compat<S>(inner: S) -> Compat<S> {
     Compat {
         inner: Mutex::new(inner),
     }

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{Service, ServiceExt};
 
 pub trait Policy<S, Request>
@@ -15,6 +17,7 @@ where
     ) -> Result<S::Response, (Request, Self::RequestState<'a>)>;
 }
 
+#[derive(Clone, Debug)]
 pub struct Retry<S, P> {
     inner: S,
     policy: P,
@@ -33,6 +36,21 @@ where
     service: &'a S,
     policy: &'a P,
     inner: S::Permit<'a>,
+}
+
+impl<'a, S, P, Request> fmt::Debug for RetryPermit<'a, S, P, Request>
+where
+    S: Service<Request> + fmt::Debug,
+    P: fmt::Debug,
+    S::Permit<'a>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RetryPermit")
+            .field("service", &self.service)
+            .field("policy", &self.policy)
+            .field("inner", &self.inner)
+            .finish()
+    }
 }
 
 impl<Request, S, P> Service<Request> for Retry<S, P>

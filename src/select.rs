@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{fmt, marker::PhantomData};
 
 use futures_util::future::select_all;
 
@@ -7,6 +7,30 @@ use crate::Service;
 pub struct Select<S, I> {
     _inner: PhantomData<S>,
     services: I,
+}
+
+impl<S, I> fmt::Debug for Select<S, I>
+where
+    I: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Select")
+            .field("_inner", &self._inner)
+            .field("services", &self.services)
+            .finish()
+    }
+}
+
+impl<S, I> Clone for Select<S, I>
+where
+    I: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            _inner: self._inner,
+            services: self.services.clone(),
+        }
+    }
 }
 
 impl<Request, S, I> Service<Request> for Select<S, I>

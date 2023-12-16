@@ -1,5 +1,8 @@
+use std::{any, fmt};
+
 use crate::Service;
 
+#[derive(Clone, Debug)]
 pub struct Map<S, F> {
     inner: S,
     closure: F,
@@ -17,6 +20,19 @@ where
 {
     inner: S::Permit<'a>,
     closure: &'a F,
+}
+
+impl<'a, S, F, Request> fmt::Debug for MapPermit<'a, S, F, Request>
+where
+    S: Service<Request>,
+    S::Permit<'a>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MapPermit")
+            .field("inner", &self.inner)
+            .field("closure", &format_args!("{}", any::type_name::<F>()))
+            .finish()
+    }
 }
 
 impl<Request, S, F, Output> Service<Request> for Map<S, F>
