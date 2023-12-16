@@ -1,6 +1,3 @@
-// This is used in `Select` to ensure `Unpin`.
-#![feature(return_type_notation)]
-
 pub mod buffer;
 #[cfg(feature = "compat")]
 pub mod compat;
