@@ -105,3 +105,33 @@ where
         S::call(permit, request).await
     }
 }
+
+pub struct RefPermit<'t, 'a, S, Request>
+where
+    S: Service<Request> + 'a,
+    't: 'a,
+{
+    _x: PhantomData<&'t ()>,
+    inner: S::Permit<'a>,
+}
+
+impl<'t, Request, S> Service<Request> for &'t S
+where
+    S: Service<Request>,
+{
+    type Response = S::Response;
+    type Permit<'a> = RefPermit<'t, 'a, S, Request>
+    where
+        't: 'a;
+
+    async fn acquire(&self) -> Self::Permit<'_> {
+        RefPermit {
+            _x: PhantomData,
+            inner: S::acquire(self).await,
+        }
+    }
+
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
+        S::call(permit.inner, request).await
+    }
+}
