@@ -1,3 +1,6 @@
+#![allow(async_fn_in_trait)]
+
+mod balance;
 pub mod buffer;
 #[cfg(feature = "compat")]
 pub mod compat;
