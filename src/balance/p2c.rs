@@ -1,8 +1,7 @@
 use futures_util::{stream::FuturesUnordered, StreamExt};
 use indexmap::IndexMap;
-use tokio::sync::Mutex;
 
-use crate::{Leak, LeakPermit, Service};
+use crate::Service;
 
 use super::Load;
 
