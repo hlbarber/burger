@@ -1,7 +1,8 @@
 use futures_util::{stream::FuturesUnordered, StreamExt};
 use indexmap::IndexMap;
+use tokio::sync::Mutex;
 
-use crate::Service;
+use crate::{Leak, LeakPermit, Service};
 
 use super::Load;
 
@@ -12,14 +13,12 @@ pub struct Balance<S, Key> {
 
 impl<Request, S, Key> Service<Request> for Balance<S, Key>
 where
-    S: Service<Request>,
-    S: Load,
-    Key: 'static,
+    S: Service<Request> + Load,
 {
     type Response = S::Response;
     type Permit<'a> = S::Permit<'a>
     where
-        S: 'a;
+        S: 'a, Key: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         let mut permits: FuturesUnordered<_> = self
@@ -43,7 +42,10 @@ where
         }
     }
 
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
+    where
+        Self: 'a,
+    {
         S::call(permit, request).await
     }
 }
