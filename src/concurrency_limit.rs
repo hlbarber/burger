@@ -2,7 +2,7 @@ use std::fmt;
 
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::Service;
+use crate::{balance::Load, Service};
 
 #[derive(Debug)]
 pub struct ConcurrencyLimit<S> {
@@ -58,5 +58,16 @@ where
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         S::call(permit.inner, request).await
+    }
+}
+
+impl<S> Load for ConcurrencyLimit<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    async fn load(&self) -> Self::Metric {
+        self.inner.load().await
     }
 }

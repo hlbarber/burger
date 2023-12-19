@@ -1,6 +1,6 @@
 #![allow(async_fn_in_trait)]
 
-mod balance;
+pub mod balance;
 pub mod buffer;
 #[cfg(feature = "compat")]
 pub mod compat;
@@ -17,6 +17,7 @@ pub mod then;
 
 use std::sync::Arc;
 
+use balance::Load;
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
 use load_shed::LoadShed;
@@ -110,6 +111,17 @@ where
     }
 }
 
+impl<S> Load for Arc<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    async fn load(&self) -> Self::Metric {
+        S::load(self).await
+    }
+}
+
 impl<'t, Request, S> Service<Request> for &'t S
 where
     S: Service<Request>,
@@ -131,6 +143,17 @@ where
     }
 }
 
+impl<'t, S> Load for &'t S
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    async fn load(&self) -> Self::Metric {
+        S::load(self).await
+    }
+}
+
 impl<Request, Permit, S> Service<Request> for Mutex<S>
 where
     for<'a> S: Service<Request, Permit<'a> = Permit>,
@@ -146,10 +169,18 @@ where
         guard.acquire().await
     }
 
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
-    where
-        Self: 'a,
-    {
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         S::call(permit, request).await
+    }
+}
+
+impl<S> Load for Mutex<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    async fn load(&self) -> Self::Metric {
+        self.lock().await.load().await
     }
 }

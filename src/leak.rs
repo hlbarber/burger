@@ -50,7 +50,7 @@ where
 {
     type Metric = S::Metric;
 
-    fn load(&self) -> Self::Metric {
-        self.inner.load()
+    async fn load(&self) -> Self::Metric {
+        self.inner.load().await
     }
 }
