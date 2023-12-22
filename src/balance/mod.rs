@@ -1,6 +1,10 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::{
+    pin::Pin,
+    sync::atomic::{AtomicUsize, Ordering},
+    task::{Context, Poll},
+};
 
-use futures_util::{stream::Map, Stream, StreamExt};
+use futures_util::Stream;
 
 use crate::Service;
 
@@ -12,9 +16,19 @@ pub trait Load {
     async fn load(&self) -> Self::Metric;
 }
 
+#[derive(Debug)]
 pub struct PendingRequests<S> {
     inner: S,
     count: AtomicUsize,
+}
+
+impl<S> PendingRequests<S> {
+    pub(crate) fn new(inner: S) -> Self {
+        Self {
+            inner,
+            count: AtomicUsize::new(0),
+        }
+    }
 }
 
 impl<Request, S> Service<Request> for PendingRequests<S>
@@ -54,21 +68,38 @@ pub enum Change<K, V> {
     Remove(K),
 }
 
+pin_project_lite::pin_project! {
+    pub struct ChangeMapService<St, F> {
+        #[pin]
+        stream: St,
+        f: F,
+    }
+}
+
+impl<St, F, Key, S, Output> Stream for ChangeMapService<St, F>
+where
+    St: Stream<Item = Change<Key, S>>,
+    F: Fn(S) -> Output,
+{
+    type Item = Change<Key, Output>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let this = self.project();
+        this.stream.poll_next(cx).map(|opt| {
+            opt.map(|next| match next {
+                Change::Insert(key, inner) => Change::Insert(key, (this.f)(inner)),
+                Change::Remove(key) => Change::Remove(key),
+            })
+        })
+    }
+}
+
 pub trait DiscoverExt<Key, S>: Stream<Item = Change<Key, S>> {
-    fn pending_requests(self) -> Map<Self, fn(Change<Key, S>) -> Change<Key, PendingRequests<S>>>
+    fn change_map_service<F>(self, f: F) -> ChangeMapService<Self, F>
     where
         Self: Sized,
     {
-        self.map(|change| match change {
-            Change::Insert(key, inner) => Change::Insert(
-                key,
-                PendingRequests {
-                    inner,
-                    count: AtomicUsize::default(),
-                },
-            ),
-            Change::Remove(key) => Change::Remove(key),
-        })
+        ChangeMapService { stream: self, f }
     }
 }
 

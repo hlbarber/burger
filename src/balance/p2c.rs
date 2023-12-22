@@ -1,8 +1,14 @@
-use std::{future::Future, hash::Hash, pin::pin, sync::Arc};
+use std::{
+    future::Future,
+    hash::Hash,
+    ops::{Deref, DerefMut},
+    pin::pin,
+    sync::Arc,
+};
 
-use futures_util::{stream::FuturesUnordered, FutureExt, Stream, StreamExt};
+use futures_util::{future::join_all, stream::FuturesUnordered, FutureExt, Stream, StreamExt};
 use indexmap::IndexMap;
-use tokio::sync::Mutex;
+use tokio::sync::{OwnedRwLockWriteGuard, RwLock, RwLockWriteGuard};
 
 use crate::{
     leak::{leak, Leak, LeakPermit},
@@ -12,8 +18,24 @@ use crate::{
 use super::{Change, Load};
 
 pub struct Balance<S, Key> {
-    inner: Arc<Mutex<BalanceInner<Leak<'static, S>, Key>>>,
-    empty: Arc<Mutex<()>>,
+    inner: Arc<RwLock<BalanceInner<Leak<'static, S>, Key>>>,
+}
+
+impl<S, Key> Balance<S, Key>
+where
+    S: Load,
+{
+    pub async fn load_profile(&self) -> Vec<S::Metric> {
+        join_all(
+            self.inner
+                .read()
+                .await
+                .services
+                .values()
+                .map(|svc| svc.load()),
+        )
+        .await
+    }
 }
 
 impl<Request, S, Key> Service<Request> for Balance<S, Key>
@@ -38,29 +60,67 @@ where
     }
 }
 
+enum EitherLock<'a, T> {
+    Borrowed(RwLockWriteGuard<'a, T>),
+    Owned(OwnedRwLockWriteGuard<T>),
+}
+
+impl<T> Deref for EitherLock<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            EitherLock::Borrowed(x) => x.deref(),
+            EitherLock::Owned(x) => x.deref(),
+        }
+    }
+}
+impl<T> DerefMut for EitherLock<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        match self {
+            EitherLock::Borrowed(x) => x.deref_mut(),
+            EitherLock::Owned(x) => x.deref_mut(),
+        }
+    }
+}
+
 pub fn balance<St, Key, S>(changes: St) -> (Balance<S, Key>, impl Future<Output = ()>)
 where
     St: Stream<Item = Change<Key, S>>,
     Key: Eq + Hash,
 {
-    let inner = Arc::new(Mutex::new(BalanceInner {
+    let inner = Arc::new(RwLock::new(BalanceInner {
         services: IndexMap::new(),
     }));
-    let empty = Arc::new(Mutex::new(()));
     let balance = Balance {
         inner: inner.clone(),
-        empty: empty.clone(),
     };
+    let empty_guard = inner.clone().try_write_owned().unwrap();
     let fut = async move {
+        let mut empty_guard = Some(EitherLock::Owned(empty_guard));
         let mut changes = pin!(changes);
         while let Some(mut new_change) = changes.next().await {
-            let mut guard = inner.lock().await;
+            let mut guard = if let Some(guard) = empty_guard.take() {
+                guard
+            } else {
+                EitherLock::Borrowed(inner.write().await)
+            };
             loop {
                 match new_change {
-                    Change::Insert(key, service) => guard.insert(key, leak(Arc::new(service))),
-                    Change::Remove(key) => guard.remove(&key),
+                    Change::Insert(key, service) => {
+                        guard.insert(key, leak(Arc::new(service)));
+                    }
+                    Change::Remove(key) => {
+                        guard.remove(&key);
+                    }
                 };
                 let Some(change) = changes.next().now_or_never().flatten() else {
+                    if guard.is_empty() {
+                        empty_guard = Some(guard);
+                    } else {
+                        let _guard = empty_guard.take();
+                        drop(_guard);
+                    }
                     break;
                 };
                 new_change = change;
@@ -106,14 +166,15 @@ where
         let mut permits: FuturesUnordered<_> = self
             .services
             .values()
-            .map(|s| async {
+            .map(|s| async move {
                 let permit = s.acquire().await;
-                let load = s.load().await;
-                (load, permit)
+                (s, permit)
             })
             .collect();
-        let (first_load, first_permit) = permits.next().await.expect("at least one service");
-        if let Some((second_load, second_permit)) = permits.next().await {
+        let (first, first_permit) = permits.next().await.unwrap();
+        if let Some((second, second_permit)) = permits.next().now_or_never().flatten() {
+            let first_load = first.load().await;
+            let second_load = second.load().await;
             if first_load < second_load {
                 first_permit
             } else {

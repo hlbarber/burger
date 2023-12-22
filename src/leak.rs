@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::{balance::Load, Service};
 
+#[derive(Debug)]
 pub struct Leak<'t, S> {
     _ref: &'t (),
     inner: Arc<S>,

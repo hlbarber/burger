@@ -17,7 +17,7 @@ pub mod then;
 
 use std::sync::Arc;
 
-use balance::Load;
+use balance::{Load, PendingRequests};
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
 use load_shed::LoadShed;
@@ -25,7 +25,7 @@ use map::Map;
 use oneshot::oneshot;
 use retry::Retry;
 use then::Then;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
 pub trait Service<Request> {
     type Response;
@@ -88,6 +88,13 @@ pub trait ServiceExt<Request>: Service<Request> {
         Self: Sized,
     {
         Retry::new(self, policy)
+    }
+
+    fn pending_requests(self) -> PendingRequests<Self>
+    where
+        Self: Sized,
+    {
+        PendingRequests::new(self)
     }
 }
 
@@ -182,5 +189,35 @@ where
 
     async fn load(&self) -> Self::Metric {
         self.lock().await.load().await
+    }
+}
+
+impl<Request, S, Permit> Service<Request> for RwLock<S>
+where
+    for<'a> S: Service<Request, Permit<'a> = Permit>,
+    S: 'static,
+{
+    type Response = S::Response;
+    type Permit<'a> = S::Permit<'a>
+    where
+        Self: 'a;
+
+    async fn acquire(&self) -> Self::Permit<'_> {
+        self.read().await.acquire().await
+    }
+
+    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
+        S::call(permit, request).await
+    }
+}
+
+impl<S> Load for RwLock<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    async fn load(&self) -> Self::Metric {
+        self.read().await.load().await
     }
 }
