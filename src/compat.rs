@@ -5,7 +5,7 @@ use std::{
 
 use tower_service::Service as TowerService;
 
-use crate::Service;
+use crate::{balance::Load, Service};
 
 #[derive(Debug)]
 pub struct Compat<S> {
@@ -40,5 +40,16 @@ where
 pub fn compat<S>(inner: S) -> Compat<S> {
     Compat {
         inner: Mutex::new(inner),
+    }
+}
+
+impl<S> Load for Compat<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    fn load(&self) -> Self::Metric {
+        self.inner.lock().unwrap().load()
     }
 }

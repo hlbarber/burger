@@ -1,4 +1,4 @@
-use crate::Service;
+use crate::{balance::Load, Service};
 
 pub(super) async fn oneshot<Request, S>(request: Request, service: &S) -> S::Response
 where
@@ -28,5 +28,16 @@ where
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         oneshot(request, permit).await
+    }
+}
+
+impl<S> Load for Depressurize<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    fn load(&self) -> Self::Metric {
+        self.inner.load()
     }
 }

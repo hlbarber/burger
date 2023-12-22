@@ -1,6 +1,6 @@
 use futures_util::FutureExt;
 
-use crate::Service;
+use crate::{balance::Load, Service};
 
 #[derive(Clone, Debug)]
 pub struct LoadShed<S> {
@@ -35,5 +35,16 @@ where
         } else {
             Err(Shed(request))
         }
+    }
+}
+
+impl<S> Load for LoadShed<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    fn load(&self) -> Self::Metric {
+        self.inner.load()
     }
 }

@@ -1,10 +1,4 @@
-use std::{
-    pin::Pin,
-    sync::atomic::{AtomicUsize, Ordering},
-    task::{Context, Poll},
-};
-
-use futures_util::Stream;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::Service;
 
@@ -13,7 +7,7 @@ pub mod p2c;
 pub trait Load {
     type Metric: PartialOrd;
 
-    async fn load(&self) -> Self::Metric;
+    fn load(&self) -> Self::Metric;
 }
 
 #[derive(Debug)]
@@ -58,7 +52,7 @@ where
 impl<S> Load for PendingRequests<S> {
     type Metric = usize;
 
-    async fn load(&self) -> Self::Metric {
+    fn load(&self) -> Self::Metric {
         self.count.load(Ordering::Acquire)
     }
 }
@@ -67,40 +61,3 @@ pub enum Change<K, V> {
     Insert(K, V),
     Remove(K),
 }
-
-pin_project_lite::pin_project! {
-    pub struct ChangeMapService<St, F> {
-        #[pin]
-        stream: St,
-        f: F,
-    }
-}
-
-impl<St, F, Key, S, Output> Stream for ChangeMapService<St, F>
-where
-    St: Stream<Item = Change<Key, S>>,
-    F: Fn(S) -> Output,
-{
-    type Item = Change<Key, Output>;
-
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let this = self.project();
-        this.stream.poll_next(cx).map(|opt| {
-            opt.map(|next| match next {
-                Change::Insert(key, inner) => Change::Insert(key, (this.f)(inner)),
-                Change::Remove(key) => Change::Remove(key),
-            })
-        })
-    }
-}
-
-pub trait DiscoverExt<Key, S>: Stream<Item = Change<Key, S>> {
-    fn change_map_service<F>(self, f: F) -> ChangeMapService<Self, F>
-    where
-        Self: Sized,
-    {
-        ChangeMapService { stream: self, f }
-    }
-}
-
-impl<Key, S, St> DiscoverExt<Key, S> for St where St: Stream<Item = Change<Key, S>> {}

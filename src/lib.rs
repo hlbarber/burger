@@ -124,8 +124,8 @@ where
 {
     type Metric = S::Metric;
 
-    async fn load(&self) -> Self::Metric {
-        S::load(self).await
+    fn load(&self) -> Self::Metric {
+        S::load(self)
     }
 }
 
@@ -156,13 +156,14 @@ where
 {
     type Metric = S::Metric;
 
-    async fn load(&self) -> Self::Metric {
-        S::load(self).await
+    fn load(&self) -> Self::Metric {
+        S::load(self)
     }
 }
 
 impl<Request, Permit, S> Service<Request> for Mutex<S>
 where
+    // NOTE: These bounds seem too tight
     for<'a> S: Service<Request, Permit<'a> = Permit>,
     S: 'static,
 {
@@ -181,19 +182,9 @@ where
     }
 }
 
-impl<S> Load for Mutex<S>
-where
-    S: Load,
-{
-    type Metric = S::Metric;
-
-    async fn load(&self) -> Self::Metric {
-        self.lock().await.load().await
-    }
-}
-
 impl<Request, S, Permit> Service<Request> for RwLock<S>
 where
+    // NOTE: These bounds seem too tight
     for<'a> S: Service<Request, Permit<'a> = Permit>,
     S: 'static,
 {
@@ -208,16 +199,5 @@ where
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         S::call(permit, request).await
-    }
-}
-
-impl<S> Load for RwLock<S>
-where
-    S: Load,
-{
-    type Metric = S::Metric;
-
-    async fn load(&self) -> Self::Metric {
-        self.read().await.load().await
     }
 }

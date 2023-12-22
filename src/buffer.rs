@@ -3,7 +3,7 @@ use std::fmt;
 use futures_util::FutureExt;
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::{Service, ServiceExt};
+use crate::{balance::Load, Service, ServiceExt};
 
 #[derive(Debug)]
 pub struct Buffer<S> {
@@ -88,5 +88,16 @@ where
             BufferPermitInner::Eager(permit) => S::call(permit, request).await,
             BufferPermitInner::Buffered(service, _permit) => service.oneshot(request).await,
         }
+    }
+}
+
+impl<S> Load for Buffer<S>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    fn load(&self) -> Self::Metric {
+        self.inner.load()
     }
 }

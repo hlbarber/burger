@@ -40,8 +40,7 @@ where
     where
         Self: 'a,
     {
-        let response = S::call(permit.inner, request).await;
-        response
+        S::call(permit.inner, request).await
     }
 }
 
@@ -51,7 +50,7 @@ where
 {
     type Metric = S::Metric;
 
-    async fn load(&self) -> Self::Metric {
-        self.inner.load().await
+    fn load(&self) -> Self::Metric {
+        self.inner.load()
     }
 }

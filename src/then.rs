@@ -1,6 +1,6 @@
 use std::{any, fmt, future::Future};
 
-use crate::Service;
+use crate::{balance::Load, Service};
 
 #[derive(Debug, Clone)]
 pub struct Then<S, F> {
@@ -53,5 +53,16 @@ where
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         (permit.closure)(S::call(permit.inner, request).await).await
+    }
+}
+
+impl<S, F> Load for Then<S, F>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    fn load(&self) -> Self::Metric {
+        self.inner.load()
     }
 }

@@ -16,12 +16,13 @@ use tokio::time::sleep;
 async fn main() {
     tracing_subscriber::fmt().init();
 
-    const N_SERVICES: usize = 4;
-    const LATENCY_RANGE: Range<f32> = 0.01..0.5;
+    const N_SERVICES: u64 = 4;
+    const LATENCY_RANGE_MS: Range<u64> = 10..500;
 
     let stream = iter(0..N_SERVICES).map(|index| {
-        let latency = N_SERVICES as f32 * 3.0 * rand::thread_rng().gen_range(LATENCY_RANGE);
-        let latency = Duration::from_secs_f32(latency);
+        let latency_ms = 3 * N_SERVICES * rand::thread_rng().gen_range(LATENCY_RANGE_MS);
+        tracing::info!(index, latency_ms);
+        let latency = Duration::from_millis(latency_ms);
         let svc = service_fn(move |_| sleep(latency))
             .concurrency_limit(1)
             .pending_requests();
@@ -33,13 +34,15 @@ async fn main() {
 
     let mut futures_unordered = FuturesUnordered::new();
     loop {
-        let profile = svc.load_profile().await;
-        tracing::info!(?profile);
+        let load_profile = svc.load_profile().await;
+        tracing::info!(?load_profile);
 
-        let interval = rand::thread_rng().gen_range(LATENCY_RANGE);
-        let interval = Duration::from_secs_f32(interval);
-        sleep(interval).await;
+        let interval_ms = rand::thread_rng().gen_range(LATENCY_RANGE_MS);
+        sleep(Duration::from_millis(interval_ms)).await;
         futures_unordered.push(svc.oneshot(()));
+
+        // Using `FuturesUnordered` and randomly driving execution is a way to work around
+        // https://github.com/rust-lang/rust/issues/100013
         if random() {
             futures_unordered.next().await;
         }

@@ -67,7 +67,7 @@ where
 {
     type Metric = S::Metric;
 
-    async fn load(&self) -> Self::Metric {
-        self.inner.load().await
+    fn load(&self) -> Self::Metric {
+        self.inner.load()
     }
 }

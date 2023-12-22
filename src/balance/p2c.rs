@@ -1,4 +1,5 @@
 use std::{
+    convert::Infallible,
     future::Future,
     hash::Hash,
     ops::{Deref, DerefMut},
@@ -6,7 +7,7 @@ use std::{
     sync::Arc,
 };
 
-use futures_util::{future::join_all, stream::FuturesUnordered, FutureExt, Stream, StreamExt};
+use futures_util::{stream::FuturesUnordered, FutureExt, Stream, StreamExt};
 use indexmap::IndexMap;
 use tokio::sync::{OwnedRwLockWriteGuard, RwLock, RwLockWriteGuard};
 
@@ -17,6 +18,83 @@ use crate::{
 
 use super::{Change, Load};
 
+/// Panics if empty.
+struct BalanceInner<S, Key> {
+    services: IndexMap<Key, S>,
+}
+
+impl<S, Key> BalanceInner<S, Key>
+where
+    S: Load,
+{
+    async fn load_profile(&self) -> Vec<S::Metric> {
+        self.services.values().map(|svc| svc.load()).collect()
+    }
+}
+
+impl<S, Key> BalanceInner<S, Key>
+where
+    Key: Eq + Hash,
+{
+    fn insert(&mut self, key: Key, service: S) -> Option<S> {
+        self.services.insert(key, service)
+    }
+
+    fn remove(&mut self, key: &Key) -> Option<S> {
+        self.services.remove(key)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.services.is_empty()
+    }
+}
+
+impl<Request, S, Key> Service<Request> for BalanceInner<S, Key>
+where
+    S: Service<Request> + Load,
+{
+    type Response = S::Response;
+    type Permit<'a> = S::Permit<'a>
+    where
+        S: 'a, Key: 'a;
+
+    async fn acquire(&self) -> Self::Permit<'_> {
+        // Race all permits.
+        let mut permits: FuturesUnordered<_> = self
+            .services
+            .values()
+            .map(|s| async move {
+                let permit = s.acquire().await;
+                (s, permit)
+            })
+            .collect();
+
+        // Wait for first permit.
+        let (first, first_permit) = permits.next().await.unwrap();
+
+        // Try obtain second permit.
+        let Some((second, second_permit)) = permits.next().now_or_never().flatten() else {
+            return first_permit;
+        };
+
+        // Choose lowest load permit.
+        let first_load = first.load();
+        let second_load = second.load();
+        if first_load < second_load {
+            first_permit
+        } else {
+            second_permit
+        }
+    }
+
+    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
+    where
+        Self: 'a,
+    {
+        S::call(permit, request).await
+    }
+}
+
 pub struct Balance<S, Key> {
     inner: Arc<RwLock<BalanceInner<Leak<'static, S>, Key>>>,
 }
@@ -26,15 +104,7 @@ where
     S: Load,
 {
     pub async fn load_profile(&self) -> Vec<S::Metric> {
-        join_all(
-            self.inner
-                .read()
-                .await
-                .services
-                .values()
-                .map(|svc| svc.load()),
-        )
-        .await
+        self.inner.read().await.load_profile().await
     }
 }
 
@@ -84,7 +154,16 @@ impl<T> DerefMut for EitherLock<'_, T> {
     }
 }
 
-pub fn balance<St, Key, S>(changes: St) -> (Balance<S, Key>, impl Future<Output = ()>)
+#[derive(Debug)]
+#[non_exhaustive]
+pub struct Terminated;
+
+pub fn balance<St, Key, S>(
+    changes: St,
+) -> (
+    Balance<S, Key>,
+    impl Future<Output = Result<Infallible, Terminated>>,
+)
 where
     St: Stream<Item = Change<Key, S>>,
     Key: Eq + Hash,
@@ -95,17 +174,23 @@ where
     let balance = Balance {
         inner: inner.clone(),
     };
+    // Immediately take guard so that `BalanceInner` cannot acquire when empty. Hold it until at least one service has been added.
     let empty_guard = inner.clone().try_write_owned().unwrap();
     let fut = async move {
         let mut empty_guard = Some(EitherLock::Owned(empty_guard));
         let mut changes = pin!(changes);
         while let Some(mut new_change) = changes.next().await {
+            // Take the guard if not already held.
             let mut guard = if let Some(guard) = empty_guard.take() {
                 guard
             } else {
                 EitherLock::Borrowed(inner.write().await)
             };
+
+            // We loop to consume as many changes while holding the lock.
+            // NOTE: This will starve the `Service` if the stream is never pending.
             loop {
+                // Mutate the `BalanceInner`.
                 match new_change {
                     Change::Insert(key, service) => {
                         guard.insert(key, leak(Arc::new(service)));
@@ -114,81 +199,32 @@ where
                         guard.remove(&key);
                     }
                 };
-                let Some(change) = changes.next().now_or_never().flatten() else {
-                    if guard.is_empty() {
-                        empty_guard = Some(guard);
-                    } else {
-                        let _guard = empty_guard.take();
-                        drop(_guard);
+
+                match changes.next().now_or_never() {
+                    // Stream yielded.
+                    Some(Some(change)) => {
+                        new_change = change;
                     }
-                    break;
-                };
-                new_change = change;
+                    // Stream terminated.
+                    Some(None) => {
+                        return Err(Terminated);
+                    }
+                    // Stream pending.
+                    None => {
+                        // Retain the guard if `BalanceInner` is empty.
+                        if guard.is_empty() {
+                            empty_guard = Some(guard);
+                        } else {
+                            let _guard = empty_guard.take();
+                            drop(_guard);
+                        }
+                        break;
+                    }
+                }
             }
         }
+        Err(Terminated)
     };
 
     (balance, fut)
-}
-
-/// Panics if empty.
-struct BalanceInner<S, Key> {
-    services: IndexMap<Key, S>,
-}
-
-impl<S, Key> BalanceInner<S, Key>
-where
-    Key: Eq + Hash,
-{
-    fn insert(&mut self, key: Key, service: S) -> Option<S> {
-        self.services.insert(key, service)
-    }
-
-    fn remove(&mut self, key: &Key) -> Option<S> {
-        self.services.remove(key)
-    }
-
-    fn is_empty(&self) -> bool {
-        self.services.is_empty()
-    }
-}
-
-impl<Request, S, Key> Service<Request> for BalanceInner<S, Key>
-where
-    S: Service<Request> + Load,
-{
-    type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
-    where
-        S: 'a, Key: 'a;
-
-    async fn acquire(&self) -> Self::Permit<'_> {
-        let mut permits: FuturesUnordered<_> = self
-            .services
-            .values()
-            .map(|s| async move {
-                let permit = s.acquire().await;
-                (s, permit)
-            })
-            .collect();
-        let (first, first_permit) = permits.next().await.unwrap();
-        if let Some((second, second_permit)) = permits.next().now_or_never().flatten() {
-            let first_load = first.load().await;
-            let second_load = second.load().await;
-            if first_load < second_load {
-                first_permit
-            } else {
-                second_permit
-            }
-        } else {
-            first_permit
-        }
-    }
-
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
-    where
-        Self: 'a,
-    {
-        S::call(permit, request).await
-    }
 }
