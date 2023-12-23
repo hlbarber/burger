@@ -1,10 +1,18 @@
-use std::future::Future;
+use std::{any, fmt, future::Future};
 
 use crate::Service;
 
 #[derive(Clone)]
 pub struct ServiceFn<F> {
     closure: F,
+}
+
+impl<F> fmt::Debug for ServiceFn<F> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ServiceFn")
+            .field("closure", &format_args!("{}", any::type_name::<F>()))
+            .finish()
+    }
 }
 
 impl<Request, Fut, F> Service<Request> for ServiceFn<F>

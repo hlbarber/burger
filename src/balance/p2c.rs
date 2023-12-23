@@ -19,6 +19,7 @@ use crate::{
 use super::{Change, Load};
 
 /// Panics if empty.
+#[derive(Debug)]
 struct BalanceInner<S, Key> {
     services: IndexMap<Key, S>,
 }
@@ -95,6 +96,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct Balance<S, Key> {
     inner: Arc<RwLock<BalanceInner<Leak<'static, S>, Key>>>,
 }

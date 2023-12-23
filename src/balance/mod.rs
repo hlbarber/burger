@@ -57,6 +57,7 @@ impl<S> Load for PendingRequests<S> {
     }
 }
 
+#[derive(Debug)]
 pub enum Change<K, V> {
     Insert(K, V),
     Remove(K),

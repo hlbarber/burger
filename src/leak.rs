@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
 use crate::{balance::Load, Service};
 
@@ -18,6 +18,19 @@ where
 {
     _svc: Arc<S>,
     inner: S::Permit<'t>,
+}
+
+impl<'t, S, Request> fmt::Debug for LeakPermit<'t, S, Request>
+where
+    S: Service<Request> + fmt::Debug,
+    for<'a> S::Permit<'a>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LeakPermit")
+            .field("_svc", &self._svc)
+            .field("inner", &self.inner)
+            .finish()
+    }
 }
 
 impl<'t, Request, S> Service<Request> for Leak<'t, S>

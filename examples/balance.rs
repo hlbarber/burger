@@ -30,7 +30,7 @@ async fn main() {
     });
 
     let (svc, worker) = balance(stream);
-    worker.await;
+    let _ = worker.await;
 
     let mut futures_unordered = FuturesUnordered::new();
     loop {

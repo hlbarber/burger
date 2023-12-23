@@ -1,4 +1,8 @@
 #![allow(async_fn_in_trait)]
+// #![deny(missing_docs, missing_debug_implementations)]
+#![deny(missing_debug_implementations)]
+
+//! An experimental service framework.
 
 pub mod balance;
 pub mod buffer;
@@ -26,6 +30,9 @@ use oneshot::oneshot;
 use retry::Retry;
 use then::Then;
 use tokio::sync::{Mutex, RwLock};
+
+#[cfg(feature = "compat")]
+pub use compat::compat;
 
 pub trait Service<Request> {
     type Response;
