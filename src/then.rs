@@ -11,16 +11,15 @@
 //!
 //! # #[tokio::main]
 //! # async fn main() {
-//! let svc = service_fn(|x: usize| async move { x.to_string() }).then(|x: String| async move { x.parse() });
-//! let response: usize = svc.oneshot(32).await.unwrap();
-//! assert_eq!(response, 32);
+//! let svc = service_fn(|x| async move { 7 * x }).then(|x| async move { x + 1 });
+//! let response = svc.oneshot(2u32).await;
+//! assert_eq!(response, 15);
 //! # }
 //! ```
 //!
 //! # Load
 //!
 //! The [Load::load] on [Then] defers to the inner service.
-//!
 
 use std::{any, fmt, future::Future};
 

@@ -30,7 +30,6 @@
 //! # Load
 //!
 //! This has _no_ [Load](crate::load::Load) implementation.
-//!
 
 use std::fmt;
 

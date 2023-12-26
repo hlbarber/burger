@@ -34,7 +34,6 @@
 //! # Load
 //!
 //! The [Load::load] on [LoadShed] defers to the inner service.
-//!
 
 use futures_util::FutureExt;
 

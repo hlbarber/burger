@@ -10,7 +10,7 @@
 //!
 //! # #[tokio::main]
 //! # async fn main() {
-//! let svc = service_fn(|x: usize| async move { x.to_string() }).map(|x: String| x.parse());
+//! let svc = service_fn(|x: u32| async move { x.to_string() }).map(|x: String| x.parse());
 //! let response: usize = svc.oneshot(32).await.unwrap();
 //! assert_eq!(response, 32);
 //! # }
@@ -19,7 +19,6 @@
 //! # Load
 //!
 //! [Load](crate::load::Load) measurements defer to the inner service.
-//!
 
 use std::{any, fmt};
 

@@ -23,7 +23,6 @@
 //! # Load
 //!
 //! The [Load::load] on [Compat] implementation uses [tower::load::Load].
-//!
 
 use std::{
     future::poll_fn,

@@ -20,7 +20,6 @@
 //! # Load
 //!
 //! The [Load::load] on [Depressurize] defers to the inner service.
-//!
 
 use crate::{load::Load, Service, ServiceExt};
 

@@ -2,6 +2,10 @@
 // #![deny(missing_docs, missing_debug_implementations)]
 
 //! An experimental service framework.
+//!
+//! The [Service] trait is the central abstraction. It is an
+//! [asynchronous function](Service::call), accepting a request and returning a response, which
+//! can only be executed _after_ a [permit](Service::Permit) is [acquired](Service::acquire).
 
 pub mod balance;
 pub mod buffer;
@@ -32,6 +36,8 @@ use retry::Retry;
 use then::Then;
 use tokio::sync::{Mutex, RwLock};
 
+#[doc(inline)]
+pub use balance::p2c::balance as balance_p2c;
 #[cfg(feature = "compat")]
 #[doc(inline)]
 pub use compat::compat;
@@ -47,7 +53,7 @@ pub use steer::steer;
 /// # Example
 ///
 /// ```rust
-/// use burger::{*, service_fn::ServiceFn};
+/// use burger::{service_fn::ServiceFn, *};
 ///
 /// # #[tokio::main]
 /// # async fn main() {

@@ -40,7 +40,6 @@
 //! # Load
 //!
 //! This has _no_ [Load](crate::Load) implementation.
-//!
 use std::{fmt, marker::PhantomData};
 
 use futures_util::future::select_all;

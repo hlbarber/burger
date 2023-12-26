@@ -29,12 +29,16 @@
 //!     BReq: Clone,
 //! {
 //!     type RequestState<'a> = State<BReq>;
-//!  
+//!
 //!     fn create(&self, request: &Request<BReq>) -> State<BReq> {
 //!         State(request.clone())
 //!     }
 //!
-//!     async fn classify<'a>(&self, mut state: State<BReq>, response: Response<BResp>) -> Result<Response<BResp>, (Request<BReq>, State<BReq>)> {
+//!     async fn classify<'a>(
+//!         &self,
+//!         mut state: State<BReq>,
+//!         response: Response<BResp>,
+//!     ) -> Result<Response<BResp>, (Request<BReq>, State<BReq>)> {
 //!         if response.status() != http::StatusCode::SERVICE_UNAVAILABLE {
 //!             return Ok(response);
 //!         }
@@ -45,13 +49,11 @@
 //!         }
 //!     }
 //! }
-//!
 //! ```
 //!
 //! # Load
 //!
 //! The [Load::load] on [Retry] defers to the inner service.
-//!
 
 use std::fmt;
 
@@ -69,14 +71,14 @@ use crate::{load::Load, Service, ServiceExt};
 ///
 /// struct Attempts<'a, BReq> {
 ///     max: &'a usize,
-///    request: Request<BReq>,
-///    attempted: usize,
+///     request: Request<BReq>,
+///     attempted: usize,
 /// }
 ///
 /// impl<S, BReq, BResp> retry::Policy<S, Request<BReq>> for FiniteRetries
 /// where
 ///     S: Service<Request<BReq>, Response = http::Response<BResp>>,
-///     BReq: Clone
+///     BReq: Clone,
 /// {
 ///     type RequestState<'a> = Attempts<'a, BReq>;
 ///

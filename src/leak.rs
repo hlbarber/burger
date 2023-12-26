@@ -19,7 +19,6 @@
 //! # Load
 //!
 //! The [Load::load] on [Leak] defers to the inner service.
-//!
 
 use std::{fmt, sync::Arc};
 

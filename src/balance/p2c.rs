@@ -163,9 +163,11 @@ impl<T> DerefMut for EitherLock<'_, T> {
 #[non_exhaustive]
 pub struct Terminated;
 
-/// Constructs a [Balance] from a stream of [Change].
+/// Constructs a [Power of Two Random Choice] load balancer from a [Stream] of [Change].
 ///
-/// See [module](mod@crate::balance) for more information.
+/// See [module](mod@crate::balance::p2c) for more information.
+///
+/// [Power of Two Random Choice]: http://www.eecs.harvard.edu/%7Emichaelm/postscripts/handbook2001.pdf
 pub fn balance<St, Key, S>(
     changes: St,
 ) -> (

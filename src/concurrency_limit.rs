@@ -11,19 +11,21 @@
 //!
 //! # #[tokio::main]
 //! # async fn main() {
-//! let svc = service_fn(|x| async move { sleep(Duration::from_secs(1)).await; 2 * x }).concurrency_limit(1);
+//! let svc = service_fn(|x| async move {
+//!     sleep(Duration::from_secs(1)).await;
+//!     2 * x
+//! })
+//! .concurrency_limit(1);
 //! let (a, b) = join! {
 //!     svc.oneshot(6),
 //!     svc.oneshot(2)
 //! };
 //! # }
-//!
 //! ```
 //!
 //! # Load
 //!
 //! The [Load::load] on [ConcurrencyLimit] defers to the inner service.
-//!
 
 use std::fmt;
 
