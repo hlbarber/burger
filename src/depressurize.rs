@@ -24,7 +24,7 @@
 
 use crate::{load::Load, Service, ServiceExt};
 
-/// A wrapper for the [ServiceExt::depressurize](crate::ServiceExt::depressurize) combinator.
+/// A wrapper for the [ServiceExt::depressurize] combinator.
 ///
 /// See the [module](crate::depressurize) for more information.
 #[derive(Clone, Debug)]

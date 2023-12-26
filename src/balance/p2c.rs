@@ -12,7 +12,7 @@ use indexmap::IndexMap;
 use tokio::sync::{OwnedRwLockWriteGuard, RwLock, RwLockWriteGuard};
 
 use crate::{
-    leak::{leak, Leak, LeakPermit},
+    leak::{Leak, LeakPermit},
     load::Load,
     Service,
 };
@@ -106,6 +106,7 @@ impl<S, Key> Balance<S, Key>
 where
     S: Load,
 {
+    /// Returns [Load::load] for all current services.
     pub async fn load_profile(&self) -> Vec<S::Metric> {
         self.inner.read().await.load_profile().await
     }
@@ -157,10 +158,14 @@ impl<T> DerefMut for EitherLock<'_, T> {
     }
 }
 
+/// The change stream has terminated.
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct Terminated;
 
+/// Constructs a [Balance] from a stream of [Change].
+///
+/// See [module](mod@crate::balance) for more information.
 pub fn balance<St, Key, S>(
     changes: St,
 ) -> (
@@ -196,7 +201,7 @@ where
                 // Mutate the `BalanceInner`.
                 match new_change {
                     Change::Insert(key, service) => {
-                        guard.insert(key, leak(Arc::new(service)));
+                        guard.insert(key, Leak::new(Arc::new(service)));
                     }
                     Change::Remove(key) => {
                         guard.remove(&key);

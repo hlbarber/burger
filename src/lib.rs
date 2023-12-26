@@ -24,6 +24,7 @@ use std::sync::Arc;
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
 use depressurize::Depressurize;
+use leak::Leak;
 use load::{Load, PendingRequests};
 use load_shed::LoadShed;
 use map::Map;
@@ -167,14 +168,22 @@ pub trait ServiceExt<Request>: Service<Request> {
         Depressurize::new(self)
     }
 
-    /// Records [Load], measured by number of applies.
+    /// Records [Load] on the service, measured by number of pending requests.
     ///
-    /// See the ??
+    /// See the [load] module for more information.
     fn pending_requests(self) -> PendingRequests<Self>
     where
         Self: Sized,
     {
         PendingRequests::new(self)
+    }
+
+    /// Extends the lifetime of the permit.
+    fn leak<'t>(self: Arc<Self>) -> Leak<'t, Self>
+    where
+        Self: Sized,
+    {
+        Leak::new(self)
     }
 }
 

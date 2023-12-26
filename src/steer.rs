@@ -10,7 +10,7 @@ pub struct Steer<S, P> {
     picker: P,
 }
 
-trait Picker<S, Request> {
+pub trait Picker<S, Request> {
     fn pick(&self, services: &[S], request: &Request) -> usize;
 }
 

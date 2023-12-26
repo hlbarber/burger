@@ -2,14 +2,19 @@ use std::{fmt, sync::Arc};
 
 use crate::{load::Load, Service};
 
+/// A wrapper [Service] for the [ServiceExt::leak](crate::ServiceExt::leak) combinator.
+///
+/// See the [module](crate::leak) for more information.
 #[derive(Debug)]
 pub struct Leak<'t, S> {
     _ref: &'t (),
     inner: Arc<S>,
 }
 
-pub fn leak<'t, S>(inner: Arc<S>) -> Leak<'t, S> {
-    Leak { _ref: &(), inner }
+impl<'t, S> Leak<'t, S> {
+    pub(crate) fn new(inner: Arc<S>) -> Leak<'t, S> {
+        Leak { _ref: &(), inner }
+    }
 }
 
 /// The [Service::Permit] type for [Leak].
