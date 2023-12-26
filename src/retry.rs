@@ -47,10 +47,15 @@
 //! }
 //!
 //! ```
+//!
+//! # Load
+//!
+//! The [Load::load] on [Retry] defers to the inner service.
+//!
 
 use std::fmt;
 
-use crate::{Service, ServiceExt};
+use crate::{load::Load, Service, ServiceExt};
 
 /// A retry policy allows for customization of [Retry].
 ///
@@ -121,7 +126,7 @@ where
     ) -> Result<S::Response, (Request, Self::RequestState<'a>)>;
 }
 
-/// A wrapper for the [ServiceExt::retry](crate::ServiceExt::retry) combinator.
+/// A wrapper for the [ServiceExt::retry] combinator.
 ///
 /// See the [module](crate::retry) for more information.
 #[derive(Clone, Debug)]
@@ -197,5 +202,16 @@ where
                 }
             }
         }
+    }
+}
+
+impl<S, P> Load for Retry<S, P>
+where
+    S: Load,
+{
+    type Metric = S::Metric;
+
+    fn load(&self) -> Self::Metric {
+        self.inner.load()
     }
 }

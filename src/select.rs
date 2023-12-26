@@ -39,7 +39,7 @@
 //!
 //! # Load
 //!
-//! This has _no_ [Load](crate::load::Load) implementation.
+//! This has _no_ [Load](crate::Load) implementation.
 //!
 use std::{fmt, marker::PhantomData};
 

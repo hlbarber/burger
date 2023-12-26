@@ -22,7 +22,7 @@
 //!
 //! # Load
 //!
-//! [Load](crate::load::Load) measurements defer to the inner service.
+//! The [Load::load] on [ConcurrencyLimit] defers to the inner service.
 //!
 
 use std::fmt;

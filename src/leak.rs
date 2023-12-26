@@ -1,5 +1,25 @@
 //! The [ServiceExt::leak](crate::ServiceExt::leak) combinator extends the lifetime of a
 //! [Service::Permit].
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//!
+//! use std::sync::Arc;
+//!
+//! # #[tokio::main]
+//! # async fn main() {
+//! let svc = Arc::new(service_fn(|x| async move { x + 4 })).leak();
+//! let response = svc.oneshot(3u32).await;
+//! assert_eq!(7, response);
+//! # }
+//! ```
+//!
+//! # Load
+//!
+//! The [Load::load] on [Leak] defers to the inner service.
+//!
 
 use std::{fmt, sync::Arc};
 
