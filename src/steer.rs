@@ -14,6 +14,7 @@ trait Picker<S, Request> {
     fn pick(&self, services: &[S], request: &Request) -> usize;
 }
 
+/// The [Service::Permit] type for [Steer].
 pub struct SteerPermit<'a, S, P, Request>
 where
     S: Service<Request>,

@@ -2,14 +2,68 @@ use std::fmt;
 
 use crate::{Service, ServiceExt};
 
+/// A retry policy allows for customization of [Retry].
+///
+/// # Example
+///
+/// ```rust
+/// use http::{Request, Response};
+/// use burger::{retry::Policy, *};
+///
+/// struct FiniteRetries(usize);
+///
+/// struct Attempts<'a, BReq> {
+///     max: &'a usize,
+///    request: Request<BReq>,
+///    attempted: usize,
+/// }
+///
+/// impl<S, BReq, BResp> Policy<S, Request<BReq>> for FiniteRetries
+/// where
+///     S: Service<Request<BReq>, Response = http::Response<BResp>>,
+///     BReq: Clone
+/// {
+///     type RequestState<'a> = Attempts<'a, BReq>;
+///
+///     fn create(&self, request: &Request<BReq>) -> Self::RequestState<'_> {
+///         Attempts {
+///             max: &self.0,
+///             request: request.clone(),
+///             attempted: 0,
+///         }
+///     }
+///
+///     async fn classify<'a>(
+///         &self,
+///         mut state: Self::RequestState<'a>,
+///         response: Response<BResp>,
+///     ) -> Result<Response<BResp>, (Request<BReq>, Self::RequestState<'a>)> {
+///         if response.status() == http::status::StatusCode::OK {
+///             return Ok(response);
+///         }
+///
+///         state.attempted += 1;
+///         if state.attempted >= *state.max {
+///             return Ok(response);
+///         }
+///
+///         Err((state.request.clone(), state))
+///     }
+/// }
+/// ```
 pub trait Policy<S, Request>
 where
     S: Service<Request>,
 {
+    /// The type of the request state.
     type RequestState<'a>;
 
+    /// Creates a new [RequestState](Policy::RequestState).
     fn create(&self, request: &Request) -> Self::RequestState<'_>;
 
+    /// Classifies the response, determining whether it was successful. On success returns [Ok]
+    /// [Service::Response], on failure returns the next request and the updated
+    /// [RequestState](Policy::RequestState).
     async fn classify<'a>(
         &self,
         state: Self::RequestState<'a>,
@@ -29,6 +83,7 @@ impl<S, P> Retry<S, P> {
     }
 }
 
+/// The [Service::Permit] type for [Retry].
 pub struct RetryPermit<'a, S, P, Request>
 where
     S: Service<Request>,

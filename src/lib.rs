@@ -1,6 +1,5 @@
 #![allow(async_fn_in_trait)]
-// #![deny(missing_docs, missing_debug_implementations)]
-#![deny(missing_debug_implementations)]
+#![deny(missing_docs, missing_debug_implementations)]
 
 //! An experimental service framework.
 
@@ -9,10 +8,11 @@ pub mod buffer;
 #[cfg(feature = "compat")]
 pub mod compat;
 pub mod concurrency_limit;
+pub mod depressurize;
 pub mod leak;
+pub mod load;
 pub mod load_shed;
 pub mod map;
-pub mod oneshot;
 pub mod retry;
 pub mod select;
 pub mod service_fn;
@@ -21,40 +21,84 @@ pub mod then;
 
 use std::sync::Arc;
 
-use balance::{Load, PendingRequests};
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
+use depressurize::Depressurize;
+use load::{Load, PendingRequests};
 use load_shed::LoadShed;
 use map::Map;
-use oneshot::oneshot;
 use retry::Retry;
 use then::Then;
 use tokio::sync::{Mutex, RwLock};
 
 #[cfg(feature = "compat")]
+#[doc(inline)]
 pub use compat::compat;
+#[doc(inline)]
+pub use select::select;
+#[doc(inline)]
+pub use service_fn::service_fn;
+#[doc(inline)]
+pub use steer::steer;
 
+/// An asynchronous function call, which can only be executed _after_ obtaining a permit.
+///
+/// # Example
+///
+/// ```rust
+/// use burger::{*, service_fn::ServiceFn};
+///
+/// # #[tokio::main]
+/// # async fn main() {
+/// let svc = service_fn(|x: usize| async move { x.to_string() });
+/// let permit = svc.acquire().await;
+/// let response = ServiceFn::call(permit, 32).await;
+/// # }
+/// ```
 pub trait Service<Request> {
+    /// The type produced by the service call.
     type Response;
+    /// The type of the permit required to call the service.
     type Permit<'a>
     where
         Self: 'a;
 
+    /// Obtains a permit.
     async fn acquire(&self) -> Self::Permit<'_>;
 
+    /// Consumes a permit to call the service.
     async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
     where
         Self: 'a;
 }
 
+/// An extension trait for [Service].
 pub trait ServiceExt<Request>: Service<Request> {
+    /// Acquires the permit and then immediately uses it to call the service.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use burger::*;
+    ///
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// let svc = service_fn(|x: usize| async move { x.to_string() });
+    /// let response = svc.oneshot(32).await;
+    /// # }
+    /// ```
     async fn oneshot(&self, request: Request) -> Self::Response
     where
         Self: Sized,
     {
-        oneshot(request, self).await
+        let permit = self.acquire().await;
+        Self::call(permit, request).await
     }
 
+    /// Extends the service using a closure accepting [`Self::Response`](Service::Response) and
+    /// returning a [Future](std::future::Future).
+    ///
+    /// See the [module](then) for more information.
     fn then<F>(self, closure: F) -> Then<Self, F>
     where
         Self: Sized,
@@ -62,6 +106,10 @@ pub trait ServiceExt<Request>: Service<Request> {
         Then::new(self, closure)
     }
 
+    /// Extends the service using a closure accepting [Self::Response](Service::Response) and returning a
+    /// [Future](std::future::Future).
+    ///
+    /// See the [module](map) for more information.
     fn map<F>(self, closure: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -69,6 +117,9 @@ pub trait ServiceExt<Request>: Service<Request> {
         Map::new(self, closure)
     }
 
+    /// Applies a concurrency limit to the service with a specified number of permits.
+    ///
+    /// See [concurrency limit](concurrency_limit) module for more information.
     fn concurrency_limit(self, n_permits: usize) -> ConcurrencyLimit<Self>
     where
         Self: Sized,
@@ -76,6 +127,9 @@ pub trait ServiceExt<Request>: Service<Request> {
         ConcurrencyLimit::new(self, n_permits)
     }
 
+    /// Applies load shedding to the service.
+    ///
+    /// See [module](load_shed) for more information.
     fn load_shed(self) -> LoadShed<Self>
     where
         Self: Sized,
@@ -83,6 +137,9 @@ pub trait ServiceExt<Request>: Service<Request> {
         LoadShed::new(self)
     }
 
+    /// Applies buffering to the service with a specified capacity.
+    ///
+    /// See the [module](buffer) for more information.
     fn buffer(self, capacity: usize) -> Buffer<Self>
     where
         Self: Sized,
@@ -90,6 +147,9 @@ pub trait ServiceExt<Request>: Service<Request> {
         Buffer::new(self, capacity)
     }
 
+    /// Applies retries to tbe service with a specified [Policy](crate::retry::Policy).
+    ///
+    /// See the [module](retry) for more information.
     fn retry<P>(self, policy: P) -> Retry<Self, P>
     where
         Self: Sized,
@@ -97,6 +157,19 @@ pub trait ServiceExt<Request>: Service<Request> {
         Retry::new(self, policy)
     }
 
+    /// Depressurizes the service.
+    ///
+    /// See the [module](depressurize) for more information,
+    fn depressurize(self) -> Depressurize<Self>
+    where
+        Self: Sized,
+    {
+        Depressurize::new(self)
+    }
+
+    /// Records [Load], measured by number of applies.
+    ///
+    /// See the ??
     fn pending_requests(self) -> PendingRequests<Self>
     where
         Self: Sized,

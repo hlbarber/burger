@@ -1,7 +1,30 @@
+//! A [Service] can be constructed from a closure accepting a request and returning a [Future] via
+//! the [service_fn] function.
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//!
+//! # #[tokio::main]
+//! # async fn main() {
+//! let svc = service_fn(|x: u64| async move { x.to_string() });
+//! let response = svc.oneshot(32).await;
+//! # }
+//! ```
+//!
+//! # Load
+//!
+//! This has _no_ [Load](crate::load::Load) implementation.
+//!
+
 use std::{any, fmt, future::Future};
 
 use crate::Service;
 
+/// The [Service] returned by the [service_fn] constructor.
+///
+/// See the [module](mod@crate::service_fn) for more information.
 #[derive(Clone)]
 pub struct ServiceFn<F> {
     closure: F,
@@ -32,6 +55,9 @@ where
     }
 }
 
-pub fn service_fn<Request, Fut, F: Fn(Request) -> Fut>(closure: F) -> ServiceFn<F> {
+/// Constructs a [Service] from a closure.
+///
+/// See the [module](mod@crate::service_fn) for more details.
+pub fn service_fn<F>(closure: F) -> ServiceFn<F> {
     ServiceFn { closure }
 }

@@ -1,11 +1,12 @@
-//! [`tower`] is an established service abstraction with many implementations.
+//! [tower] is an established service abstraction.
 //!
-//! Convert between [`tower::Service`] and [`burger::Service`] using the [`compat`] function.
+//! Convert between [tower::Service] and [burger::Service](crate::Service) using the [`compat`]
+//! function.
 //!
-//! Note that [`tower`], in general, has no disarm mechanism. This means that dropping the permit
-//! is _not_ sufficient to restore the service to a reasonable state.
+//! Note that [tower], in general, has no disarm mechanism. This means that
+//! dropping the permit is _not_ sufficient to restore the service to a reasonable state.
 //!
-//! ## Example
+//! # Example
 //!
 //! ```rust
 //! use burger::*;
@@ -18,17 +19,22 @@
 //! assert_eq!(response, Ok(32));
 //! # }
 //! ```
+//!
+//! # Load
+//!
+//! The [Load::load] on [Compat] implementation uses [tower::load::Load].
+//!
 
 use std::{
     future::poll_fn,
     sync::{Mutex, MutexGuard},
 };
 
-use tower_service::Service as TowerService;
+use tower::{load::Load, Service as TowerService};
 
-use crate::{balance::Load, Service};
+use crate::Service;
 
-/// A compatibility wrapper for [`tower::Service`].
+/// A compatibility wrapper for [tower::Service].
 #[derive(Debug)]
 pub struct Compat<S> {
     inner: Mutex<S>,
@@ -59,9 +65,9 @@ where
     }
 }
 
-/// Converts a [tower::Service] to a [burger::Service].
+/// Converts a [tower::Service] to a [burger::Service](Service).
 ///
-/// See [mod@burger::compat] for more details.
+/// See the [module](mod@crate::compat) for more details.
 pub fn compat<S>(inner: S) -> Compat<S> {
     Compat {
         inner: Mutex::new(inner),
@@ -70,7 +76,7 @@ pub fn compat<S>(inner: S) -> Compat<S> {
 
 impl<S> Load for Compat<S>
 where
-    S: Load,
+    S: tower::load::Load,
 {
     type Metric = S::Metric;
 

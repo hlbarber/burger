@@ -13,10 +13,11 @@ use tokio::sync::{OwnedRwLockWriteGuard, RwLock, RwLockWriteGuard};
 
 use crate::{
     leak::{leak, Leak, LeakPermit},
+    load::Load,
     Service,
 };
 
-use super::{Change, Load};
+use super::Change;
 
 /// Panics if empty.
 #[derive(Debug)]

@@ -2,8 +2,12 @@ use std::fmt;
 
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::{balance::Load, Service};
+use crate::{load::Load, Service};
 
+/// A wrapper for the [ServiceExt::concurrency_limit](crate::ServiceExt::concurrency_limit)
+/// combinator.
+///
+/// See the [module](crate::concurrency_limit) for more information.
 #[derive(Debug)]
 pub struct ConcurrencyLimit<S> {
     inner: S,
@@ -19,6 +23,7 @@ impl<S> ConcurrencyLimit<S> {
     }
 }
 
+/// The [Service::Permit] type for [ConcurrencyLimit].
 pub struct ConcurrencyLimitPermit<'a, S, Request>
 where
     S: Service<Request> + 'a,

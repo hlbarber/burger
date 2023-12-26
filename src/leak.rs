@@ -1,6 +1,6 @@
 use std::{fmt, sync::Arc};
 
-use crate::{balance::Load, Service};
+use crate::{load::Load, Service};
 
 #[derive(Debug)]
 pub struct Leak<'t, S> {
@@ -12,6 +12,7 @@ pub fn leak<'t, S>(inner: Arc<S>) -> Leak<'t, S> {
     Leak { _ref: &(), inner }
 }
 
+/// The [Service::Permit] type for [Leak].
 pub struct LeakPermit<'t, S, Request>
 where
     S: Service<Request> + 't,

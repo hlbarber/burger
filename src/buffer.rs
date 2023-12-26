@@ -1,10 +1,17 @@
+//! The [ServiceExt::buffer] combinator causes [Service::acquire] to immediately resolve until
+//! the buffer is at maximum capacity, at which point it defers to the inner service's
+//! `acquire`. The buffer is drained when the inner service's permit becomes available.
+
 use std::fmt;
 
 use futures_util::FutureExt;
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::{balance::Load, Service, ServiceExt};
+use crate::{load::Load, Service};
 
+/// A wrapper for the [ServiceExt::buffer](crate::ServiceExt::buffer) combinator.
+///
+/// See the [module](crate::buffer) for more information.
 #[derive(Debug)]
 pub struct Buffer<S> {
     inner: S,
@@ -20,6 +27,7 @@ impl<S> Buffer<S> {
     }
 }
 
+/// The [Service::Permit] type for [Buffer].
 pub struct BufferPermit<'a, S, Request>
 where
     S: Service<Request>,
@@ -84,10 +92,15 @@ where
     }
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        match permit.inner {
-            BufferPermitInner::Eager(permit) => S::call(permit, request).await,
-            BufferPermitInner::Buffered(service, _permit) => service.oneshot(request).await,
-        }
+        let permit = match permit.inner {
+            BufferPermitInner::Eager(permit) => permit,
+            BufferPermitInner::Buffered(service, _permit) => {
+                let permit = service.acquire().await;
+                drop(_permit);
+                permit
+            }
+        };
+        S::call(permit, request).await
     }
 }
 

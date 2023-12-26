@@ -1,7 +1,34 @@
+//! The [ServiceExt::then](crate::ServiceExt::then) combinator is used to extend a service with a
+//! closure accepting the current [Service::Response] and returning a [Future] whose
+//! [Future::Output] is the new [Service::Response].
+//!
+//! For a synchronous version see the [map](mod@crate::map) module.
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//!
+//! # #[tokio::main]
+//! # async fn main() {
+//! let svc = service_fn(|x: usize| async move { x.to_string() }).then(|x: String| async move { x.parse() });
+//! let response: usize = svc.oneshot(32).await.unwrap();
+//! assert_eq!(response, 32);
+//! # }
+//! ```
+//!
+//! # Load
+//!
+//! The [Load::load] on [Then] defers to the inner service.
+//!
+
 use std::{any, fmt, future::Future};
 
-use crate::{balance::Load, Service};
+use crate::{load::Load, Service};
 
+/// A wrapper for the [ServiceExt::then](crate::ServiceExt::then) combinator.
+///
+/// See the [module](crate::then) for more information.
 #[derive(Debug, Clone)]
 pub struct Then<S, F> {
     inner: S,
@@ -14,6 +41,7 @@ impl<S, F> Then<S, F> {
     }
 }
 
+/// The [Service::Permit] type for [Then].
 pub struct ThenPermit<'a, S, F, Request>
 where
     S: Service<Request> + 'a,
