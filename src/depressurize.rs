@@ -1,6 +1,6 @@
-//! In [burger](crate) backpressure is exerted by pending requests. The [ServiceExt::depressurize]
-//! combinator moves the [Service::acquire] execution into the [Service::call], causing
-//! [Service::acquire] to resolve immediately.
+//! In [burger](crate) backpressure is exerted by [Service::acquire]. The
+//! [ServiceExt::depressurize] combinator moves the [Service::acquire] execution into the
+//! [Service::call], causing [Service::acquire] to resolve immediately.
 //!
 //! # Example
 //!

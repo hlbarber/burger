@@ -1,3 +1,30 @@
+//! The [ServiceExt::concurrency_limit](crate::ServiceExt::concurrency_limit) combinator restricts
+//! the number of inflight [Service::call]s to a specified value.
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//! use tokio::{join, time::sleep};
+//!
+//! use std::time::Duration;
+//!
+//! # #[tokio::main]
+//! # async fn main() {
+//! let svc = service_fn(|x| async move { sleep(Duration::from_secs(1)).await; 2 * x }).concurrency_limit(1);
+//! let (a, b) = join! {
+//!     svc.oneshot(6),
+//!     svc.oneshot(2)
+//! };
+//! # }
+//!
+//! ```
+//!
+//! # Load
+//!
+//! [Load](crate::load::Load) measurements defer to the inner service.
+//!
+
 use std::fmt;
 
 use tokio::sync::{Semaphore, SemaphorePermit};

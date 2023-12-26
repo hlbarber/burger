@@ -1,3 +1,53 @@
+//! The [ServiceExt::retry] combinator returns [Retry], which retries following a specified
+//! [Policy].
+//!
+//! A [Policy] is used to instantiate the per request state and classify whether a request was
+//! successful or not.
+//!
+//! The [Service::acquire] on [Retry] waits to acquire the inner [Service::Permit]. The
+//! [Service::call] then:
+//!
+//! 1. Calls [Policy::create] to produce [Policy::RequestState].
+//! 2. Uses the inner permit to [Service::call] the inner [Service].
+//! 3. Calls [Policy::classify], with the [Policy::RequestState] from (1).
+//! 4. If [Ok] then returns the [Service::Response], if [Err] then returns retries using
+//! [ServiceExt::oneshot] to obtain the next permit.
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//! use http::{Request, Response};
+//!
+//! struct RetryServiceUnavailable;
+//!
+//! struct State<BReq>(Request<BReq>);
+//!
+//! impl<S, BReq, BResp> retry::Policy<S, Request<BReq>> for RetryServiceUnavailable
+//! where
+//!     S: Service<Request<BReq>, Response = Response<BResp>> + 'static,
+//!     BReq: Clone,
+//! {
+//!     type RequestState<'a> = State<BReq>;
+//!  
+//!     fn create(&self, request: &Request<BReq>) -> State<BReq> {
+//!         State(request.clone())
+//!     }
+//!
+//!     async fn classify<'a>(&self, mut state: State<BReq>, response: Response<BResp>) -> Result<Response<BResp>, (Request<BReq>, State<BReq>)> {
+//!         if response.status() != http::StatusCode::SERVICE_UNAVAILABLE {
+//!             return Ok(response);
+//!         }
+//!         if let Some(some) = response.headers().get("retry-after") {
+//!             Err((state.0.clone(), state))
+//!         } else {
+//!             Ok(response)
+//!         }
+//!     }
+//! }
+//!
+//! ```
+
 use std::fmt;
 
 use crate::{Service, ServiceExt};
@@ -7,8 +57,8 @@ use crate::{Service, ServiceExt};
 /// # Example
 ///
 /// ```rust
+/// use burger::*;
 /// use http::{Request, Response};
-/// use burger::{retry::Policy, *};
 ///
 /// struct FiniteRetries(usize);
 ///
@@ -18,7 +68,7 @@ use crate::{Service, ServiceExt};
 ///    attempted: usize,
 /// }
 ///
-/// impl<S, BReq, BResp> Policy<S, Request<BReq>> for FiniteRetries
+/// impl<S, BReq, BResp> retry::Policy<S, Request<BReq>> for FiniteRetries
 /// where
 ///     S: Service<Request<BReq>, Response = http::Response<BResp>>,
 ///     BReq: Clone
@@ -71,6 +121,9 @@ where
     ) -> Result<S::Response, (Request, Self::RequestState<'a>)>;
 }
 
+/// A wrapper for the [ServiceExt::retry](crate::ServiceExt::retry) combinator.
+///
+/// See the [module](crate::retry) for more information.
 #[derive(Clone, Debug)]
 pub struct Retry<S, P> {
     inner: S,

@@ -1,6 +1,7 @@
-//! The [ServiceExt::buffer] combinator causes [Service::acquire] to immediately resolve until
-//! the buffer is at maximum capacity, at which point it defers to the inner service's
-//! `acquire`. The buffer is drained when the inner service's permit becomes available.
+//! The [ServiceExt::buffer](crate::ServiceExt::buffer) combinator causes [Service::acquire] to
+//! immediately resolve until the buffer is at maximum capacity, at which point it defers to the
+//! inner service's `acquire`. The buffer is drained when the inner service's permit becomes
+//! available.
 
 use std::fmt;
 

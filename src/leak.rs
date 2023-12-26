@@ -1,3 +1,6 @@
+//! The [ServiceExt::leak](crate::ServiceExt::leak) combinator extends the lifetime of a
+//! [Service::Permit].
+
 use std::{fmt, sync::Arc};
 
 use crate::{load::Load, Service};

@@ -1,7 +1,6 @@
-//! Load is a measurement of work a service is experiencing.
-//!
-//! The [Load] trait provides an interface to measure it and therefore can drive business logic in
-//! applications such as load balancers.
+//! Load is a measurement of work a service is experiencing. The [Load] trait provides an
+//! interface to measure it and therefore can drive business logic in applications such as load
+//! balancers.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 

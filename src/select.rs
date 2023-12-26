@@ -1,9 +1,55 @@
+//! Given a collection of some [services](Service), [select] can be used to construct a `Service`
+//! which uses the first permit available to when [Service::call].
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//! use tokio::time::sleep;
+//!
+//! use std::time::Duration;
+//!  
+//! pub struct Wait(u64);
+//!
+//! #[non_exhaustive]
+//! pub struct WaitPermit<'a>(&'a u64);
+//!
+//! impl Service<u64> for Wait {
+//!     type Response = u64;
+//!     type Permit<'a> = WaitPermit<'a>;
+//!
+//!     async fn acquire(&self) -> Self::Permit<'_> {
+//!         sleep(Duration::from_secs(self.0)).await;
+//!         WaitPermit(&self.0)
+//!     }
+//!
+//!     async fn call(permit: Self::Permit<'_>, request: u64) -> u64 {
+//!         permit.0 * request
+//!     }
+//! }
+//!
+//! # #[tokio::main]
+//! async fn main() {
+//! let svcs: Vec<_> = (0..10).map(Wait).collect();
+//! let svc = select(svcs);
+//! let response = svc.oneshot(7).await;
+//! assert_eq!(0, response);
+//! # }
+//! ```
+//!
+//! # Load
+//!
+//! This has _no_ [Load](crate::load::Load) implementation.
+//!
 use std::{fmt, marker::PhantomData};
 
 use futures_util::future::select_all;
 
 use crate::Service;
 
+/// A wrapper [Service] for the [select] constructor.
+///
+/// See the [module](mod@crate::select) for more information.
 pub struct Select<S, I> {
     _inner: PhantomData<S>,
     services: I,
@@ -58,6 +104,10 @@ where
     }
 }
 
+/// Constructs a [Service] from a collection ([IntoIterator] must be implemented for its reference)
+/// of services whose [Service::call] is the by the first available child.
+///
+/// See [module](mod@crate::select) for more information.
 pub fn select<S, I>(services: I) -> Select<S, I> {
     Select {
         _inner: PhantomData,

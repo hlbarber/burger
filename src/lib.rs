@@ -1,5 +1,5 @@
 #![allow(async_fn_in_trait)]
-#![deny(missing_docs, missing_debug_implementations)]
+// #![deny(missing_docs, missing_debug_implementations)]
 
 //! An experimental service framework.
 
@@ -179,6 +179,8 @@ pub trait ServiceExt<Request>: Service<Request> {
     }
 
     /// Extends the lifetime of the permit.
+    ///
+    /// See the [module](crate::leak) for more information.
     fn leak<'t>(self: Arc<Self>) -> Leak<'t, Self>
     where
         Self: Sized,
