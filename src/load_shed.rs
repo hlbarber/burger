@@ -1,7 +1,9 @@
-//! The [ServiceExt::load_shed](crate::ServiceExt::load_shed) combinator causes [Service::acquire]
-//! to return with, respectively, [Some(permit)](Some) and [None] when the permit is available or
-//! otherwise. This may be used to discard any work which cannot be permitted at the time
-//! [Service::acquire] is called.
+//! The [ServiceExt::load_shed](crate::ServiceExt::load_shed) combinator returns [LoadShed], which
+//! causes [Service::acquire] to immediately return [Some(permit)](Some) when the inner
+//! [permit](Service::Permit) is ready and immediately return [None] otherwise.
+//!
+//! This may be used to discard any work which cannot be permitted at the time [Service::acquire]
+//! is called.
 //!
 //! This is a relative of [ServiceExt::depressurize](crate::ServiceExt::depressurize), which
 //! immediately accepts all work.

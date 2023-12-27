@@ -1,5 +1,7 @@
-//! The [ServiceExt::leak](crate::ServiceExt::leak) combinator extends the lifetime of a
-//! [Service::Permit].
+//! The [ServiceExt::leak](crate::ServiceExt::leak) combinator returns [Leak], which extends the
+//! lifetime of the [Service::Permit].
+//!
+//! This can be only called on [services](Service) within an [Arc].
 //!
 //! # Example
 //!

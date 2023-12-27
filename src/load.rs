@@ -1,12 +1,12 @@
-//! Load is a measurement of work a service is experiencing. The [Load] trait provides an
-//! interface to measure it and therefore can drive business logic in applications such as load
-//! balancers.
+//! Load is a measurement of the amount of work a service is experiencing. The [Load] trait
+//! provides an interface to measure it and therefore informs business logic in applications such
+//! as load balancers.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::Service;
 
-/// Measurements of load on a [Service].
+/// A measurement of load on a [Service].
 pub trait Load {
     /// The metric type outputted by [load](Load::load).
     type Metric: PartialOrd;
@@ -24,6 +24,15 @@ pub struct PendingRequests<S> {
     count: AtomicUsize,
 }
 
+/// The [Service::Permit] type for [PendingRequests].
+pub struct PendingRequestsPermit<'a, S, Request>
+where
+    S: Service<Request> + 'a,
+{
+    inner: S::Permit<'a>,
+    count: &'a AtomicUsize,
+}
+
 impl<S> PendingRequests<S> {
     pub(crate) fn new(inner: S) -> Self {
         Self {
@@ -38,22 +47,25 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
+    type Permit<'a> = PendingRequestsPermit<'a, S, Request>
     where
         Self: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
-        self.count.fetch_add(1, Ordering::Release);
-        let permit = self.inner.acquire().await;
-        self.count.fetch_sub(1, Ordering::Release);
-        permit
+        PendingRequestsPermit {
+            inner: self.inner.acquire().await,
+            count: &self.count,
+        }
     }
 
     async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
     where
         Self: 'a,
     {
-        S::call(permit, request).await
+        permit.count.fetch_add(1, Ordering::Release);
+        let response = S::call(permit.inner, request).await;
+        permit.count.fetch_sub(1, Ordering::Release);
+        response
     }
 }
 

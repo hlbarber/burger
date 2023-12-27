@@ -1,8 +1,8 @@
-//! Given a collection of [services](Service) and a [Picker], a [Steer] service can be constructed
-//! via [steer].
+//! Given a collection of [services](Service) and a [Picker], the [steer] function constructs a
+//! [Steer] [Service].
 //!
 //! The [Service::acquire] on [Steer] acquires _all_ [permits](Service::Permit) from the
-//! collection, the [Picker] then selects which permit to use when [Service::call].
+//! collection, the [Picker] then selects which permit and [Service] to [Service::call].
 //!
 //! # Example
 //!

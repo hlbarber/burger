@@ -1,5 +1,5 @@
-//! The [ServiceExt::then](crate::ServiceExt::map) combinator extends a service with a closure
-//! accepting the current [Service::Response] and the new [Service::Response].
+//! The [ServiceExt::then](crate::ServiceExt::map) combinator returns [Map], which extends a
+//! service with a specified closure from the modifying the [Service::Response].
 //!
 //! For an asynchronous version of this combinator see [then](mod@crate::then) module.
 //!

@@ -1,7 +1,7 @@
 //! [tower] is an established service abstraction.
 //!
-//! Convert between [tower::Service] and [burger::Service](crate::Service) using the [`compat`]
-//! function.
+//! A [tower::Service] is converted into a [burger::Service](crate::Service) using the
+//! [`compat`] function.
 //!
 //! Note that [tower], in general, has no disarm mechanism. This means that
 //! dropping the permit is _not_ sufficient to restore the service to a reasonable state.

@@ -1,5 +1,5 @@
-//! Given a collection of some [services](Service), [select] can be used to construct a `Service`
-//! which uses the first permit available to when [Service::call].
+//! Given a collection of some [services](Service), [select] constructs a [Service] which uses the
+//! first permit available.
 //!
 //! # Example
 //!

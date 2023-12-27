@@ -1,5 +1,6 @@
-//! The [ServiceExt::concurrency_limit](crate::ServiceExt::concurrency_limit) combinator restricts
-//! the number of inflight [Service::call]s to a specified value.
+//! The [ServiceExt::concurrency_limit](crate::ServiceExt::concurrency_limit) combinator returns
+//! [ConcurrencyLimit] which restricts the number of inflight [Service::call]s to a specified
+//! value.
 //!
 //! # Example
 //!

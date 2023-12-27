@@ -1,18 +1,25 @@
 //! In [burger](crate) backpressure is exerted by [Service::acquire]. The
-//! [ServiceExt::depressurize] combinator moves the [Service::acquire] execution into the
-//! [Service::call], causing [Service::acquire] to resolve immediately.
+//! [ServiceExt::depressurize] combinator returns [Depressurize], which moves the
+//! [Service::acquire] execution into the [Service::call], causing [Service::acquire] to resolve
+//! immediately.
 //!
 //! # Example
 //!
 //! ```rust
 //! use burger::*;
 //! use futures::FutureExt;
+//! use tokio::time::sleep;
+//!
+//! use std::time::Duration;
 //!
 //! # #[tokio::main]
 //! # async fn main() {
-//! let svc = service_fn(|x: usize| async move { x.to_string() })
-//!     .concurrency_limit(1)
-//!     .depressurize();
+//! let svc = service_fn(|x: usize| async move {
+//!     sleep(Duration::from_secs(1)).await;
+//!     x.to_string()
+//! })
+//! .concurrency_limit(1)
+//! .depressurize();
 //! let permit = svc.acquire().now_or_never().unwrap();
 //! # }
 //! ```

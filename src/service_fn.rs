@@ -1,5 +1,5 @@
-//! A [Service] can be constructed from a closure accepting a request and returning a [Future] via
-//! the [service_fn] function.
+//! The [service_fn] function constructs a [ServiceFn] from a closure accepting a request and
+//! returning a [Future].
 //!
 //! # Example
 //!
@@ -10,6 +10,7 @@
 //! # async fn main() {
 //! let svc = service_fn(|x: u64| async move { x.to_string() });
 //! let response = svc.oneshot(32).await;
+//! assert_eq!(response, "32");
 //! # }
 //! ```
 //!
