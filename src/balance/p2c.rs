@@ -1,3 +1,6 @@
+//! The [balance] function returns [Balance], which implements the [Power of Two Random Choice]
+//! load balancing algorithm, The implementation acquires two permits and then chooses the lowest [Load] of the two.
+
 use std::{
     convert::Infallible,
     future::Future,
@@ -97,6 +100,9 @@ where
     }
 }
 
+/// A wrapper [Service] for the [balance] constructor.
+///
+/// See the [module](crate::balance::p2c) for more information.
 #[derive(Debug)]
 pub struct Balance<S, Key> {
     inner: Arc<RwLock<BalanceInner<Leak<'static, S>, Key>>>,

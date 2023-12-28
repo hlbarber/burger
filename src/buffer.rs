@@ -7,9 +7,8 @@
 //!
 //! ```rust
 //! use burger::*;
-//! use tokio::{join, time::sleep};
-//!
-//! use std::time::Duration;
+//! # use tokio::{join, time::sleep};
+//! # use std::time::Duration;
 //!
 //! # #[tokio::main]
 //! # async fn main() {

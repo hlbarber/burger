@@ -1,11 +1,42 @@
 #![allow(async_fn_in_trait)]
-// #![deny(missing_docs, missing_debug_implementations)]
+#![deny(missing_docs, missing_debug_implementations)]
 
 //! An experimental service framework.
 //!
 //! The [Service] trait is the central abstraction. It is an
 //! [asynchronous function](Service::call), accepting a request and returning a response, which
 //! can only be executed _after_ a [permit](Service::Permit) is [acquired](Service::acquire).
+//!
+//! The root exports [Service] constructors, and an extension trait, [ServiceExt], which provides combinators
+//! to modify a [Service]. Both the combinators and constructors each have an associated module
+//! containing related documentation, traits, and types.
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//! # use tokio::time::sleep;
+//! # use std::time::Duration;
+//!
+//! # #[tokio::main]
+//! # async fn main() {
+//! let svc = service_fn(|x| async move {
+//!     sleep(Duration::from_secs(1)).await;
+//!     2 * x
+//! })
+//! .map(|x| x + 3)
+//! .concurrency_limit(1)
+//! .buffer(3)
+//! .load_shed();
+//! let response = svc.oneshot(30).await;
+//! assert_eq!(Ok(63), response);
+//! # }
+//! ```
+//!
+//! # Usage
+//!
+//! A typical [Service] will consist of distinct layers, each providing specific dynamics. The
+//! following flowchart attempts to categorize the exports of this crate.
 
 pub mod balance;
 pub mod buffer;
@@ -13,6 +44,7 @@ pub mod buffer;
 pub mod compat;
 pub mod concurrency_limit;
 pub mod depressurize;
+pub mod either;
 pub mod leak;
 pub mod load;
 pub mod load_shed;
@@ -28,6 +60,7 @@ use std::sync::Arc;
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
 use depressurize::Depressurize;
+use either::Either;
 use leak::Leak;
 use load::{Load, PendingRequests};
 use load_shed::LoadShed;
@@ -193,6 +226,26 @@ pub trait ServiceExt<Request>: Service<Request> {
     {
         Leak::new(self)
     }
+
+    /// Wraps as [Either::Left]. Related to [right](ServiceExt::right).
+    ///
+    /// See the [module](crate::either) for more information.
+    fn left<T>(self) -> Either<Self, T>
+    where
+        Self: Sized,
+    {
+        Either::Left(self)
+    }
+
+    /// Wraps as [Either::Right]. Related to [left](ServiceExt::left).
+    ///
+    /// See the [module](crate::either) for more information.
+    fn right<T>(self) -> Either<T, Self>
+    where
+        Self: Sized,
+    {
+        Either::Right(self)
+    }
 }
 
 impl<Request, S> ServiceExt<Request> for S where S: Service<Request> {}
@@ -298,3 +351,86 @@ where
         S::call(permit, request).await
     }
 }
+
+/// A middleware. Takes a service and wraps it.
+///
+/// It is implemented for:
+///
+/// - [FnOnce] types from `S` to [Layer::Service], where [Layer::apply] is the [FnOnce] call.
+/// - [`Option<L>`](Option) when `L` is a [Layer], where [Layer::apply] does defers to `L` when
+/// [Some] and does nothing when [None].
+/// - Tuples up to length 12 when the elements enjoy [Layer].
+pub trait Layer<S> {
+    /// The type of the [Service] returned by [apply](Layer::apply).
+    type Service;
+
+    /// Wraps the inner [Service].
+    fn apply(self, inner: S) -> Self::Service;
+}
+
+impl<S, Output, F> Layer<S> for F
+where
+    F: FnOnce(S) -> Output,
+{
+    type Service = Output;
+
+    fn apply(self, inner: S) -> Self::Service {
+        (self)(inner)
+    }
+}
+
+impl<S, L> Layer<S> for Option<L>
+where
+    L: Layer<S>,
+{
+    type Service = Either<S, L::Service>;
+
+    fn apply(self, inner: S) -> Self::Service {
+        if let Some(some) = self {
+            Either::Right(some.apply(inner))
+        } else {
+            Either::Left(inner)
+        }
+    }
+}
+
+impl<S> Layer<S> for () {
+    type Service = S;
+
+    fn apply(self, inner: S) -> Self::Service {
+        inner
+    }
+}
+
+macro_rules! impl_layer {
+    ($first: ident, $($layer: ident),*) => {
+        #[allow(unused_parens)]
+        impl<S, $first, $($layer),*> Layer<S> for ($first, $($layer),*)
+        where
+            ($($layer),*): Layer<S>,
+            $first: Layer<<($($layer),*) as Layer<S>>::Service>,
+        {
+            type Service = $first::Service;
+
+            fn apply(self, svc: S) -> Self::Service {
+                #[allow(non_snake_case)]
+                let (first, $($layer),*) = self;
+                let svc = ($($layer),*).apply(svc);
+                first.apply(svc)
+            }
+        }
+    };
+}
+
+impl_layer!(T1,);
+impl_layer!(T1, T2);
+impl_layer!(T1, T2, T3);
+impl_layer!(T1, T2, T3, T4);
+impl_layer!(T1, T2, T3, T4, T5);
+impl_layer!(T1, T2, T3, T4, T5, T6);
+impl_layer!(T1, T2, T3, T4, T5, T6, T7);
+impl_layer!(T1, T2, T3, T4, T5, T6, T7, T8);
+impl_layer!(T1, T2, T3, T4, T5, T6, T7, T8, T9);
+impl_layer!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10);
+impl_layer!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11);
+impl_layer!(T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12);

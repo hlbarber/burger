@@ -2,7 +2,10 @@
 //! provides an interface to measure it and therefore informs business logic in applications such
 //! as load balancers.
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::{
+    fmt,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use crate::Service;
 
@@ -31,6 +34,19 @@ where
 {
     inner: S::Permit<'a>,
     count: &'a AtomicUsize,
+}
+
+impl<'a, S, Request> fmt::Debug for PendingRequestsPermit<'a, S, Request>
+where
+    S: Service<Request> + 'a,
+    S::Permit<'a>: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PendingRequestsPermit")
+            .field("inner", &self.inner)
+            .field("count", &self.count)
+            .finish()
+    }
 }
 
 impl<S> PendingRequests<S> {
