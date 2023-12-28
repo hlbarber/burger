@@ -1,5 +1,5 @@
-//! The [ServiceExt::then](crate::ServiceExt::map) combinator returns [Map], which extends a
-//! service with a specified closure from the modifying the [Service::Response].
+//! The [`ServiceExt::then`](crate::ServiceExt::map) combinator returns [`Map`], which extends a
+//! service with a specified closure from the modifying the [`Service::Response`].
 //!
 //! For an asynchronous version of this combinator see [then](mod@crate::then) module.
 //!
@@ -18,13 +18,13 @@
 //!
 //! # Load
 //!
-//! [Load](crate::load::Load) measurements defer to the inner service.
+//! [`Load`](crate::load::Load) measurements defer to the inner service.
 
 use std::{any, fmt};
 
 use crate::Service;
 
-/// A wrapper [Service] for the [ServiceExt::map](crate::ServiceExt::map) combinator.
+/// A wrapper [`Service`] for the [ServiceExt::map](crate::ServiceExt::map) combinator.
 ///
 /// See the [module](crate::map) for more information.
 #[derive(Clone, Debug)]
@@ -39,7 +39,7 @@ impl<S, F> Map<S, F> {
     }
 }
 
-/// The [Service::Permit] type for [Map].
+/// The [`Service::Permit`] type for [Map].
 pub struct MapPermit<'a, S, F, Request>
 where
     S: Service<Request> + 'a,

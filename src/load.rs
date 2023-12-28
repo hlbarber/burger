@@ -1,4 +1,4 @@
-//! Load is a measurement of the amount of work a service is experiencing. The [Load] trait
+//! Load is a measurement of the amount of work a service is experiencing. The [`Load`] trait
 //! provides an interface to measure it and therefore informs business logic in applications such
 //! as load balancers.
 
@@ -9,16 +9,16 @@ use std::{
 
 use crate::Service;
 
-/// A measurement of load on a [Service].
+/// A measurement of load on a [`Service`].
 pub trait Load {
-    /// The metric type outputted by [load](Load::load).
+    /// The metric type outputted by [`Load`](Load::load).
     type Metric: PartialOrd;
 
     /// Measures the current load.
     fn load(&self) -> Self::Metric;
 }
 
-/// A wrapper [Service] providing a [Load] implementation based on the number of pending requests.
+/// A wrapper [`Service`] providing a [`Load`] implementation based on the number of pending requests.
 ///
 /// TODO: Make it so.
 #[derive(Debug)]
@@ -27,7 +27,7 @@ pub struct PendingRequests<S> {
     count: AtomicUsize,
 }
 
-/// The [Service::Permit] type for [PendingRequests].
+/// The [`Service::Permit`] type for [PendingRequests].
 pub struct PendingRequestsPermit<'a, S, Request>
 where
     S: Service<Request> + 'a,

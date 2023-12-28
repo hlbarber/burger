@@ -1,7 +1,7 @@
-//! The [ServiceExt::leak](crate::ServiceExt::leak) combinator returns [Leak], which extends the
-//! lifetime of the [Service::Permit].
+//! The [`ServiceExt::leak`](crate::ServiceExt::leak) combinator returns [`Leak`], which extends
+//! the lifetime of the [`Service::Permit`].
 //!
-//! This can be only called on [services](Service) within an [Arc].
+//! This can be only called on [services](Service) within an [`Arc`].
 //!
 //! # Example
 //!
@@ -20,13 +20,13 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [Leak] defers to the inner service.
+//! The [`Load::load`] on [`Leak`] defers to the inner service.
 
 use std::{fmt, sync::Arc};
 
 use crate::{load::Load, Service};
 
-/// A wrapper [Service] for the [ServiceExt::leak](crate::ServiceExt::leak) combinator.
+/// A wrapper [`Service`] for the [`ServiceExt::leak`](crate::ServiceExt::leak) combinator.
 ///
 /// See the [module](crate::leak) for more information.
 #[derive(Debug)]
@@ -41,7 +41,7 @@ impl<'t, S> Leak<'t, S> {
     }
 }
 
-/// The [Service::Permit] type for [Leak].
+/// The [`Service::Permit`] type for [`Leak`].
 pub struct LeakPermit<'t, S, Request>
 where
     S: Service<Request> + 't,

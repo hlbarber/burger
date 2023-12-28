@@ -3,12 +3,12 @@
 
 //! An experimental service framework.
 //!
-//! The [Service] trait is the central abstraction. It is an
+//! The [`Service`] trait is the central abstraction. It is an
 //! [asynchronous function](Service::call), accepting a request and returning a response, which
 //! can only be executed _after_ a [permit](Service::Permit) is [acquired](Service::acquire).
 //!
-//! The root exports [Service] constructors, and an extension trait, [ServiceExt], which provides combinators
-//! to modify a [Service]. Both the combinators and constructors each have an associated module
+//! The root exports [`Service`] constructors, and an extension trait, [`ServiceExt`], which provides combinators
+//! to modify a [`Service`]. Both the combinators and constructors each have an associated module
 //! containing related documentation, traits, and types.
 //!
 //! # Example
@@ -35,7 +35,7 @@
 //!
 //! # Usage
 //!
-//! A typical [Service] will consist of distinct layers, each providing specific dynamics. The
+//! A typical [`Service`] will consist of distinct layers, each providing specific dynamics. The
 //! following flowchart attempts to categorize the exports of this crate.
 
 pub mod balance;
@@ -112,7 +112,7 @@ pub trait Service<Request> {
         Self: 'a;
 }
 
-/// An extension trait for [Service].
+/// An extension trait for [`Service`].
 pub trait ServiceExt<Request>: Service<Request> {
     /// Acquires the permit and then immediately uses it to call the service.
     ///
@@ -136,7 +136,7 @@ pub trait ServiceExt<Request>: Service<Request> {
     }
 
     /// Extends the service using a closure accepting [`Self::Response`](Service::Response) and
-    /// returning a [Future](std::future::Future).
+    /// returning a [`Future`](std::future::Future).
     ///
     /// See the [module](then) for more information.
     fn then<F>(self, closure: F) -> Then<Self, F>
@@ -147,7 +147,7 @@ pub trait ServiceExt<Request>: Service<Request> {
     }
 
     /// Extends the service using a closure accepting [Self::Response](Service::Response) and returning a
-    /// [Future](std::future::Future).
+    /// [`Future`](std::future::Future).
     ///
     /// See the [module](map) for more information.
     fn map<F>(self, closure: F) -> Map<Self, F>
@@ -207,7 +207,7 @@ pub trait ServiceExt<Request>: Service<Request> {
         Depressurize::new(self)
     }
 
-    /// Records [Load] on the service, measured by number of pending requests.
+    /// Records [`Load`] on the service, measured by number of pending requests.
     ///
     /// See the [load] module for more information.
     fn pending_requests(self) -> PendingRequests<Self>
@@ -219,7 +219,7 @@ pub trait ServiceExt<Request>: Service<Request> {
 
     /// Extends the lifetime of the permit.
     ///
-    /// See the [module](crate::leak) for more information.
+    /// See the [module](leak) for more information.
     fn leak<'t>(self: Arc<Self>) -> Leak<'t, Self>
     where
         Self: Sized,
@@ -229,7 +229,7 @@ pub trait ServiceExt<Request>: Service<Request> {
 
     /// Wraps as [Either::Left]. Related to [right](ServiceExt::right).
     ///
-    /// See the [module](crate::either) for more information.
+    /// See the [module](either) for more information.
     fn left<T>(self) -> Either<Self, T>
     where
         Self: Sized,
@@ -239,7 +239,7 @@ pub trait ServiceExt<Request>: Service<Request> {
 
     /// Wraps as [Either::Right]. Related to [left](ServiceExt::left).
     ///
-    /// See the [module](crate::either) for more information.
+    /// See the [module](either) for more information.
     fn right<T>(self) -> Either<T, Self>
     where
         Self: Sized,
@@ -356,15 +356,15 @@ where
 ///
 /// It is implemented for:
 ///
-/// - [FnOnce] types from `S` to [Layer::Service], where [Layer::apply] is the [FnOnce] call.
-/// - [`Option<L>`](Option) when `L` is a [Layer], where [Layer::apply] does defers to `L` when
-/// [Some] and does nothing when [None].
-/// - Tuples up to length 12 when the elements enjoy [Layer].
+/// - [`FnOnce`] types from `S` to [`Layer::Service`], where [`Layer::apply`] is the [`FnOnce`] call.
+/// - [`Option<L>`](Option) when `L` is a [`Layer`], where [`Layer::apply`] does defers to `L` when
+/// [`Some`] and does nothing when [`None`].
+/// - Tuples up to length 12 when the elements enjoy [`Layer`], where application is right to left.
 pub trait Layer<S> {
-    /// The type of the [Service] returned by [apply](Layer::apply).
+    /// The type of the [`Service`] returned by [`apply`](Layer::apply).
     type Service;
 
-    /// Wraps the inner [Service].
+    /// Wraps the inner [`Service`].
     fn apply(self, inner: S) -> Self::Service;
 }
 

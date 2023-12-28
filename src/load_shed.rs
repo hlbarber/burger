@@ -1,11 +1,11 @@
-//! The [ServiceExt::load_shed](crate::ServiceExt::load_shed) combinator returns [LoadShed], which
-//! causes [Service::acquire] to immediately return [Some(permit)](Some) when the inner
-//! [permit](Service::Permit) is ready and immediately return [None] otherwise.
+//! The [`ServiceExt::load_shed`](crate::ServiceExt::load_shed) combinator returns [`LoadShed`], which
+//! causes [`Service::acquire`] to immediately return [`Some(permit)`](Some) when the inner
+//! [permit](Service::Permit) is ready and immediately return [`None`] otherwise.
 //!
-//! This may be used to discard any work which cannot be permitted at the time [Service::acquire]
+//! This may be used to discard any work which cannot be permitted at the time [`Service::acquire`]
 //! is called.
 //!
-//! This is a relative of [ServiceExt::depressurize](crate::ServiceExt::depressurize), which
+//! This is a relative of [`ServiceExt::depressurize`](crate::ServiceExt::depressurize), which
 //! immediately accepts all work.
 //!
 //! # Example
@@ -34,13 +34,14 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [LoadShed] defers to the inner service.
+//! The [`Load::load`] on [LoadShed] defers to the inner service.
 
 use futures_util::FutureExt;
 
 use crate::{load::Load, Service};
 
-/// A wrapper [Service] for the [ServiceExt::load_shed](crate::ServiceExt::load_shed) combinator.
+/// A wrapper [`Service`] for the [`ServiceExt::load_shed`](crate::ServiceExt::load_shed)
+/// combinator.
 ///
 /// See the [module](crate::load_shed) for more information.
 #[derive(Clone, Debug)]

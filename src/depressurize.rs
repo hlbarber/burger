@@ -1,7 +1,7 @@
-//! In [burger](crate) backpressure is exerted by [Service::acquire]. The
-//! [ServiceExt::depressurize] combinator returns [Depressurize], which moves the
-//! [Service::acquire] execution into the [Service::call], causing [Service::acquire] to resolve
-//! immediately.
+//! In [`burger`](crate) backpressure is exerted by [`Service::acquire`]. The
+//! [ServiceExt::depressurize] combinator returns [`Depressurize`], which moves the
+//! [`Service::acquire`] execution into the [`Service::call`], causing [`Service::acquire`] to
+//! resolve immediately.
 //!
 //! # Example
 //!
@@ -25,11 +25,11 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [Depressurize] defers to the inner service.
+//! The [`Load::load`] on [`Depressurize`] defers to the inner service.
 
 use crate::{load::Load, Service, ServiceExt};
 
-/// A wrapper for the [ServiceExt::depressurize] combinator.
+/// A wrapper for the [`ServiceExt::depressurize`] combinator.
 ///
 /// See the [module](crate::depressurize) for more information.
 #[derive(Clone, Debug)]

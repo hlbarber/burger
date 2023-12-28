@@ -1,7 +1,8 @@
 //! Often we want the branches of a runtime condition to output different service types. The
-//! [Either] [Service] allows the reconciliation of two separate types. The [Either::Left] and
-//! [Either::Right] variants can be constructed by [ServiceExt::left](crate::ServiceExt::left) and
-//! [ServiceExt::right](crate::ServiceExt::right) respectively.
+//! [`Either`] [`Service`] allows the reconciliation of two separate types. The [`Either::Left`]
+//! and [`Either::Right`] variants can be constructed by
+//! [`ServiceExt::left`](crate::ServiceExt::left) and
+//! [`ServiceExt::right`](crate::ServiceExt::right) respectively.
 //!
 //! # Example
 //!
@@ -20,11 +21,11 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [Either] defers to the variant.
+//! The [`Load::load`] on [`Either`] defers to the variant.
 
 use crate::{load::Load, Service};
 
-/// A wrapper [Service] for [ServiceExt::left](crate::ServiceExt::left) and
+/// A wrapper [`Service`] for [ServiceExt::left](crate::ServiceExt::left) and
 /// [ServiceExt::right](crate::ServiceExt::right) which consolidates two types.
 ///
 /// See the [module](mod@crate::either) for more information.

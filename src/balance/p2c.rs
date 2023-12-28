@@ -1,5 +1,5 @@
 //! The [balance] function returns [Balance], which implements the [Power of Two Random Choice]
-//! load balancing algorithm, The implementation acquires two permits and then chooses the lowest [Load] of the two.
+//! load balancing algorithm, The implementation acquires two permits and then chooses the lowest [`Load`] of the two.
 
 use std::{
     convert::Infallible,
@@ -100,7 +100,7 @@ where
     }
 }
 
-/// A wrapper [Service] for the [balance] constructor.
+/// A wrapper [`Service`] for the [balance] constructor.
 ///
 /// See the [module](crate::balance::p2c) for more information.
 #[derive(Debug)]
@@ -112,7 +112,7 @@ impl<S, Key> Balance<S, Key>
 where
     S: Load,
 {
-    /// Returns [Load::load] for all current services.
+    /// Returns [`Load::load`] for all current services.
     pub async fn load_profile(&self) -> Vec<S::Metric> {
         self.inner.read().await.load_profile().await
     }

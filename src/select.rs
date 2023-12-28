@@ -1,4 +1,4 @@
-//! Given a collection of some [services](Service), [select] constructs a [Service] which uses the
+//! Given a collection of some [services](Service), [`select`] constructs a [`Service`] which uses the
 //! first permit available.
 //!
 //! # Example
@@ -38,14 +38,14 @@
 //!
 //! # Load
 //!
-//! This has _no_ [Load](crate::Load) implementation.
+//! This has _no_ [`Load`](crate::Load) implementation.
 use std::{fmt, marker::PhantomData};
 
 use futures_util::future::select_all;
 
 use crate::Service;
 
-/// A wrapper [Service] for the [select] constructor.
+/// A wrapper [`Service`] for the [`select`] constructor.
 ///
 /// See the [module](mod@crate::select) for more information.
 pub struct Select<S, I> {
@@ -102,8 +102,8 @@ where
     }
 }
 
-/// Constructs a [Service] from a collection ([IntoIterator] must be implemented for its reference)
-/// of services whose [Service::call] is the by the first available child.
+/// Constructs a [`Service`] from a collection ([`IntoIterator`] must be implemented for its
+/// reference) of services whose [`Service::call`] is the by the first available child.
 ///
 /// See [module](mod@crate::select) for more information.
 pub fn select<S, I>(services: I) -> Select<S, I> {

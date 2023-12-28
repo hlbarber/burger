@@ -1,9 +1,9 @@
-//! [tower] is an established service abstraction.
+//! [`tower`] is an established service abstraction.
 //!
-//! A [tower::Service] is converted into a [burger::Service](crate::Service) using the
+//! A [`tower::Service`] is converted into a [`burger::Service`](crate::Service) using the
 //! [`compat`] function.
 //!
-//! Note that [tower], in general, has no disarm mechanism. This means that
+//! Note that [`tower`], in general, has no disarm mechanism. This means that
 //! dropping the permit is _not_ sufficient to restore the service to a reasonable state.
 //!
 //! # Example
@@ -22,7 +22,7 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [Compat] implementation uses [tower::load::Load].
+//! The [`Load::load`] on [`Compat`] implementation uses [`tower::load::Load`].
 
 use std::{
     future::poll_fn,
@@ -33,7 +33,9 @@ use tower::{load::Load, Service as TowerService};
 
 use crate::Service;
 
-/// A compatibility wrapper for [tower::Service].
+/// A compatibility wrapper for [`tower::Service`].
+///
+/// See [module](mod@crate::compat) for more information.
 #[derive(Debug)]
 pub struct Compat<S> {
     inner: Mutex<S>,
@@ -64,9 +66,9 @@ where
     }
 }
 
-/// Converts a [tower::Service] to a [burger::Service](Service).
+/// Converts a [`tower::Service`] to a [`burger::Service`](Service).
 ///
-/// See the [module](mod@crate::compat) for more details.
+/// See the [module](mod@crate::compat) for more information.
 pub fn compat<S>(inner: S) -> Compat<S> {
     Compat {
         inner: Mutex::new(inner),

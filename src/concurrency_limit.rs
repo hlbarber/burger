@@ -1,5 +1,5 @@
-//! The [ServiceExt::concurrency_limit](crate::ServiceExt::concurrency_limit) combinator returns
-//! [ConcurrencyLimit] which restricts the number of inflight [Service::call]s to a specified
+//! The [`ServiceExt::concurrency_limit`](crate::ServiceExt::concurrency_limit) combinator returns
+//! [`ConcurrencyLimit`] which restricts the number of inflight [calls](Service::call) to a specified
 //! value.
 //!
 //! # Example
@@ -25,7 +25,7 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [ConcurrencyLimit] defers to the inner service.
+//! The [`Load::load`] on [ConcurrencyLimit] defers to the inner service.
 
 use std::fmt;
 
@@ -33,7 +33,7 @@ use tokio::sync::{Semaphore, SemaphorePermit};
 
 use crate::{load::Load, Service};
 
-/// A wrapper for the [ServiceExt::concurrency_limit](crate::ServiceExt::concurrency_limit)
+/// A wrapper for the [`ServiceExt::concurrency_limit`](crate::ServiceExt::concurrency_limit)
 /// combinator.
 ///
 /// See the [module](crate::concurrency_limit) for more information.
@@ -52,7 +52,7 @@ impl<S> ConcurrencyLimit<S> {
     }
 }
 
-/// The [Service::Permit] type for [ConcurrencyLimit].
+/// The [`Service::Permit`] type for [`ConcurrencyLimit`].
 pub struct ConcurrencyLimitPermit<'a, S, Request>
 where
     S: Service<Request> + 'a,

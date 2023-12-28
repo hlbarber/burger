@@ -1,5 +1,5 @@
-//! The [service_fn] function constructs a [ServiceFn] from a closure accepting a request and
-//! returning a [Future].
+//! The [`service_fn`] function accepts a closure accepting a request and returning a [`Future`]
+//! and returns [`ServiceFn`], a [`Service`] which is immediately permitted to run the closure.
 //!
 //! # Example
 //!
@@ -16,13 +16,13 @@
 //!
 //! # Load
 //!
-//! This has _no_ [Load](crate::load::Load) implementation.
+//! This has _no_ [`Load`](crate::load::Load) implementation.
 
 use std::{any, fmt, future::Future};
 
 use crate::Service;
 
-/// The [Service] returned by the [service_fn] constructor.
+/// The [`Service`] returned by the [`service_fn`] constructor.
 ///
 /// See the [module](mod@crate::service_fn) for more information.
 #[derive(Clone)]
@@ -55,7 +55,7 @@ where
     }
 }
 
-/// Constructs a [Service] from a closure.
+/// Constructs a [`Service`] from a closure.
 ///
 /// See the [module](mod@crate::service_fn) for more details.
 pub fn service_fn<F>(closure: F) -> ServiceFn<F> {

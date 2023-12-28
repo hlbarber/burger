@@ -1,17 +1,17 @@
-//! The [ServiceExt::retry] combinator returns [Retry], which retries following a specified
-//! [Policy].
+//! The [`ServiceExt::retry`] combinator returns [`Retry`], which retries following a specified
+//! [`Policy`].
 //!
-//! A [Policy] is used to instantiate the per request state and classify whether a request was
+//! A [`Policy`] is used to instantiate the per request state and classify whether a request was
 //! successful or not.
 //!
-//! The [Service::acquire] on [Retry] waits to acquire the inner [Service::Permit]. The
-//! [Service::call] then:
+//! The [`Service::acquire`] on [`Retry`] waits to acquire the inner [`Service::Permit`]. The
+//! [`Service::call`] then:
 //!
-//! 1. Calls [Policy::create] to produce [Policy::RequestState].
-//! 2. Uses the inner permit to [Service::call] the inner [Service].
-//! 3. Calls [Policy::classify], with the [Policy::RequestState] from (1).
-//! 4. If [Ok] then returns the [Service::Response], if [Err] then returns retries using
-//! [ServiceExt::oneshot] to obtain the next permit.
+//! 1. Calls [`Policy::create`] to produce [`Policy::RequestState`].
+//! 2. Uses the inner permit to [`Service::call`] the inner [`Service`].
+//! 3. Calls [`Policy::classify`], with the [`Policy::RequestState`] from (1).
+//! 4. If [`Ok`] then returns the [`Service::Response`], if [`Err`] then returns retries using
+//! [`ServiceExt::oneshot`] to obtain the next permit.
 //!
 //! # Example
 //!
@@ -53,7 +53,7 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [Retry] defers to the inner service.
+//! The [`Load::load`] on [`Retry`] defers to the inner service.
 
 use std::fmt;
 
@@ -128,7 +128,7 @@ where
     ) -> Result<S::Response, (Request, Self::RequestState<'a>)>;
 }
 
-/// A wrapper for the [ServiceExt::retry] combinator.
+/// A wrapper for the [`ServiceExt::retry`] combinator.
 ///
 /// See the [module](crate::retry) for more information.
 #[derive(Clone, Debug)]
@@ -143,7 +143,7 @@ impl<S, P> Retry<S, P> {
     }
 }
 
-/// The [Service::Permit] type for [Retry].
+/// The [`Service::Permit`] type for [`Retry`].
 pub struct RetryPermit<'a, S, P, Request>
 where
     S: Service<Request>,

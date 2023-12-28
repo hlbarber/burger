@@ -1,5 +1,5 @@
-//! The [ServiceExt::then](crate::ServiceExt::then) combinator returns [Then], which extends a
-//! service with a closure modifying a [Service::Response] asynchronously.
+//! The [`ServiceExt::then`](crate::ServiceExt::then) combinator returns [`Then`], which extends a
+//! service with a closure modifying a [`Service::Response`] asynchronously.
 //!
 //! For a synchronous version see the [map](mod@crate::map) module.
 //!
@@ -18,13 +18,13 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [Then] defers to the inner service.
+//! The [`Load::load`] on [Then] defers to the inner service.
 
 use std::{any, fmt, future::Future};
 
 use crate::{load::Load, Service};
 
-/// A wrapper for the [ServiceExt::then](crate::ServiceExt::then) combinator.
+/// A wrapper for the [`ServiceExt::then`](crate::ServiceExt::then) combinator.
 ///
 /// See the [module](crate::then) for more information.
 #[derive(Debug, Clone)]
@@ -39,7 +39,7 @@ impl<S, F> Then<S, F> {
     }
 }
 
-/// The [Service::Permit] type for [Then].
+/// The [`Service::Permit`] type for [`Then`].
 pub struct ThenPermit<'a, S, F, Request>
 where
     S: Service<Request> + 'a,

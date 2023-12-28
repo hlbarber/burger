@@ -1,6 +1,6 @@
-//! The [ServiceExt::buffer](crate::ServiceExt::buffer) combinator returns [Buffer], whose
-//! [Service::acquire] immediately resolves until the buffer is at maximum capacity, at which point
-//! it defers to the inner service's [Service::acquire]. The buffer is drained when the inner
+//! The [`ServiceExt::buffer`](crate::ServiceExt::buffer) combinator returns [`Buffer`], whose
+//! [`Service::acquire`] immediately resolves until the buffer is at maximum capacity, at which point
+//! it defers to the inner service's [`Service::acquire`]. The buffer is drained when the inner
 //! service's permit becomes available.
 //!
 //! # Example
@@ -34,7 +34,7 @@
 //!
 //! # Load
 //!
-//! The [Load::load] on [Buffer] defers to the inner service.
+//! The [`Load::load`] on [`Buffer`] defers to the inner service.
 
 use std::fmt;
 
@@ -43,7 +43,7 @@ use tokio::sync::{Semaphore, SemaphorePermit};
 
 use crate::{load::Load, Service};
 
-/// A wrapper [Service] for the [ServiceExt::buffer](crate::ServiceExt::buffer) combinator.
+/// A wrapper [`Service`] for the [`ServiceExt::buffer`](crate::ServiceExt::buffer) combinator.
 ///
 /// See the [module](crate::buffer) for more information.
 #[derive(Debug)]
@@ -61,7 +61,7 @@ impl<S> Buffer<S> {
     }
 }
 
-/// The [Service::Permit] type for [Buffer].
+/// The [`Service::Permit`] type for [`Buffer`].
 pub struct BufferPermit<'a, S, Request>
 where
     S: Service<Request>,
