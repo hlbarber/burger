@@ -9,6 +9,7 @@ compat = ["dep:tower"]
 [dependencies]
 futures-util = "0.3.29"
 indexmap = "2.1.0"
+simple-mermaid = "0.1.0"
 tokio = { version = "1.35.0", features = ["sync"] }
 tower = { version = "0.4.13", features = ["load"], optional = true }
 tracing = "0.1.40"

@@ -1,0 +1,26 @@
+---
+title: Which constructor should I use?
+---
+flowchart TD
+    A{I want to...} --> |Create a fresh service| B{Using a...}
+    B --> |Closure| service_fn
+    B --> |tower::Service| compat
+    A --> |Modify an existing service| C{ }
+    C --> |Add retries| ServiceExt::retry
+    C --> |Modify the permit| D{ }
+    D --> |Extend lifetime of permit| ServiceExt::leak
+    D --> |Reduce backpressure| E{ }
+    E --> |Buffer| ServiceExt::buffer
+    E --> |Remove backpressure| ServiceExt::depressurize
+    E --> |Shed load| ServiceExt::load_shed
+    D --> |Increase backpressure| F{ }
+    F --> |Limit concurrency| ServiceExt::concurrency_limit
+    C --> |Modify response| G{ }
+    G --> |Synchronously| ServiceExt::map
+    G --> |Asychronously| ServiceExt::then
+    A --> |Combine existing services| H{By directing \nrequests via...}
+    H --> |Manual picking| steer
+    H --> |First permitted| select
+    H --> |Load balancer| I{ }
+    I --> |Power of two Choices| balance_p2c 
+  

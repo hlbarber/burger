@@ -36,7 +36,16 @@
 //! # Usage
 //!
 //! A typical [`Service`] will consist of distinct layers, each providing specific dynamics. The
-//! following flowchart attempts to categorize the exports of this crate.
+//! following flowchart attempts to categorize the exports of this crate:
+//!
+//! <pre class="mermaid" style="text-align:center">
+#![doc = include_str!("flowchart.mmd")]
+//! </pre>
+//! <script type="module">
+//! import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+//! let config = { theme: "dark", startOnLoad: true, flowchart: { useMaxWidth: true, htmlLabels: true } };
+//! mermaid.initialize(config);
+//! </script>
 
 pub mod balance;
 pub mod buffer;
