@@ -6,7 +6,6 @@ flowchart TD
     B --> |Closure| service_fn
     B --> |tower::Service| compat
     A --> |Modify an existing service| C{ }
-    C --> |Add retries| ServiceExt::retry
     C --> |Modify the permit| D{ }
     D --> |Extend lifetime of permit| ServiceExt::leak
     D --> |Reduce backpressure| E{ }
@@ -18,6 +17,8 @@ flowchart TD
     C --> |Modify response| G{ }
     G --> |Synchronously| ServiceExt::map
     G --> |Asychronously| ServiceExt::then
+    C --> |Consolidate service types| ServiceExt::left/right
+    C --> |Add retries| ServiceExt::retry
     A --> |Combine existing services| H{By directing \nrequests via...}
     H --> |Manual picking| steer
     H --> |First permitted| select
