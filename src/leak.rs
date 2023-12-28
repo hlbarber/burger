@@ -7,8 +7,7 @@
 //!
 //! ```rust
 //! use burger::*;
-//!
-//! use std::sync::Arc;
+//! # use std::sync::Arc;
 //!
 //! # #[tokio::main]
 //! # async fn main() {

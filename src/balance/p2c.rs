@@ -7,8 +7,7 @@
 //! ```rust
 //! use burger::*;
 //! # use futures::stream::{iter, StreamExt};
-//!
-//! use std::future::ready;
+//! # use std::future::ready;
 //!
 //! # #[tokio::main]
 //! # async fn main() {
