@@ -38,7 +38,7 @@
 
 use futures_util::FutureExt;
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Layer, Service};
 
 /// A wrapper [`Service`] for the [`ServiceExt::load_shed`](crate::ServiceExt::load_shed)
 /// combinator.
@@ -52,6 +52,11 @@ pub struct LoadShed<S> {
 impl<S> LoadShed<S> {
     pub(crate) fn new(inner: S) -> Self {
         LoadShed { inner }
+    }
+
+    /// The [`Layer`] for [`LoadShed`].
+    pub fn layer() -> impl Layer<S, Service = LoadShed<S>> {
+        move |inner| LoadShed::new(inner)
     }
 }
 

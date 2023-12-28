@@ -41,7 +41,7 @@ use std::fmt;
 use futures_util::FutureExt;
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Layer, Service};
 
 /// A wrapper [`Service`] for the [`ServiceExt::buffer`](crate::ServiceExt::buffer) combinator.
 ///
@@ -58,6 +58,11 @@ impl<S> Buffer<S> {
             inner,
             semaphore: Semaphore::new(capacity),
         }
+    }
+
+    /// The [`Layer`] for [`Buffer`].
+    pub fn layer(capacity: usize) -> impl Layer<S, Service = Buffer<S>> {
+        move |inner| Buffer::new(inner, capacity)
     }
 }
 

@@ -31,7 +31,7 @@ use std::fmt;
 
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Layer, Service};
 
 /// A wrapper for the [`ServiceExt::concurrency_limit`](crate::ServiceExt::concurrency_limit)
 /// combinator.
@@ -49,6 +49,11 @@ impl<S> ConcurrencyLimit<S> {
             inner,
             semaphore: Semaphore::new(n_permits),
         }
+    }
+
+    /// The [`Layer`] for [`ConcurrencyLimit`].
+    pub fn layer(n_permits: usize) -> impl Layer<S, Service = ConcurrencyLimit<S>> {
+        move |inner| ConcurrencyLimit::new(inner, n_permits)
     }
 }
 

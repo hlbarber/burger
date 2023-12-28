@@ -27,7 +27,7 @@
 //!
 //! The [`Load::load`] on [`Depressurize`] defers to the inner service.
 
-use crate::{load::Load, Service, ServiceExt};
+use crate::{load::Load, Layer, Service, ServiceExt};
 
 /// A wrapper for the [`ServiceExt::depressurize`] combinator.
 ///
@@ -40,6 +40,11 @@ pub struct Depressurize<S> {
 impl<S> Depressurize<S> {
     pub(crate) fn new(inner: S) -> Self {
         Self { inner }
+    }
+
+    /// The [`Layer`] for [`Depressurize`].
+    pub fn layer() -> impl Layer<S, Service = Depressurize<S>> {
+        move |inner| Depressurize::new(inner)
     }
 }
 
