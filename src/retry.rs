@@ -119,8 +119,8 @@ where
     fn create(&self, request: &Request) -> Self::RequestState<'_>;
 
     /// Classifies the response, determining whether it was successful. On success returns [Ok]
-    /// [Service::Response], on failure returns the next request and the updated
-    /// [RequestState](Policy::RequestState).
+    /// [`Service::Response`], on failure returns the next request and the updated
+    /// [`Policy::RequestState`].
     async fn classify<'a>(
         &self,
         state: Self::RequestState<'a>,

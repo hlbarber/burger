@@ -7,9 +7,9 @@
 //! [asynchronous function](Service::call), accepting a request and returning a response, which
 //! can only be executed _after_ a [permit](Service::Permit) is [acquired](Service::acquire).
 //!
-//! The root exports [`Service`] constructors, and an extension trait, [`ServiceExt`], which provides combinators
-//! to modify a [`Service`]. Both the combinators and constructors each have an associated module
-//! containing related documentation, traits, and types.
+//! The root exports [`Service`] constructors, and an extension trait, [`ServiceExt`] containing
+//! combinators to modify a [`Service`]. Both the combinators and constructors each have an
+//! associated module containing related documentation, traits, and types.
 //!
 //! # Example
 //!
@@ -123,7 +123,8 @@ pub trait Service<Request> {
 
 /// An extension trait for [`Service`].
 pub trait ServiceExt<Request>: Service<Request> {
-    /// Acquires the permit and then immediately uses it to call the service.
+    /// Acquires the [`Service::Permit`] and then immediately uses it to [call](Service::call) the
+    /// [`Service`].
     ///
     /// # Example
     ///

@@ -28,8 +28,8 @@
 
 use crate::{load::Load, Service};
 
-/// A wrapper [`Service`] for [ServiceExt::left](crate::ServiceExt::left) and
-/// [ServiceExt::right](crate::ServiceExt::right) which consolidates two types.
+/// A wrapper [`Service`] for [`ServiceExt::left`](crate::ServiceExt::left) and
+/// [`ServiceExt::right`](crate::ServiceExt::right) which consolidates two types.
 ///
 /// See the [module](mod@crate::either) for more information.
 #[derive(Debug)]

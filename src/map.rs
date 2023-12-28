@@ -24,7 +24,7 @@ use std::{any, fmt};
 
 use crate::Service;
 
-/// A wrapper [`Service`] for the [ServiceExt::map](crate::ServiceExt::map) combinator.
+/// A wrapper [`Service`] for the [`ServiceExt::map`](crate::ServiceExt::map) combinator.
 ///
 /// See the [module](crate::map) for more information.
 #[derive(Clone, Debug)]

@@ -1,7 +1,31 @@
-//! The [`balance`] function returns [`Balance`], which implements the [Power of Two Random Choice]
-//! load balancing algorithm, The implementation acquires two permits and then chooses the lowest
-//! [`Load`] of the two.
-
+//! The [`balance`] function returns [`Balance`], which implements the
+//! [Power of Two Random Choices] load balancing algorithm, The implementation acquires two
+//! permits and then chooses the lowest [`Load`] of the two.
+//!
+//! # Example
+//!
+//! ```rust
+//! use burger::*;
+//! # use futures::stream::{iter, StreamExt};
+//!
+//! use std::future::ready;
+//!
+//! # #[tokio::main]
+//! # async fn main() {
+//! let a: fn(_) -> _ = |x: u32| ready(2 * x);
+//! let b: fn(_) -> _ = |x: u32| ready(x + 3);
+//! let c: fn(_) -> _ = |x: u32| ready(3 * x + 6);
+//! let svc_stream = iter([service_fn(a), service_fn(b), service_fn(c)])
+//!     .map(|svc| svc.pending_requests())
+//!     .enumerate()
+//!     .map(|(index, svc)| balance::Change::Insert(index, svc));
+//! let (svc, worker) = balance_p2c(svc_stream);
+//! tokio::spawn(worker);
+//! let response = svc.oneshot(5u32).await;
+//! # }
+//! ```
+//!
+//! [Power of Two Random Choices]: http://www.eecs.harvard.edu/%7Emichaelm/postscripts/handbook2001.pdf
 use std::{
     convert::Infallible,
     future::Future,
@@ -170,11 +194,11 @@ impl<T> DerefMut for EitherLock<'_, T> {
 #[non_exhaustive]
 pub struct Terminated;
 
-/// Constructs a [Power of Two Random Choice] load balancer from a [`Stream`] of [`Change`].
+/// Constructs a [Power of Two Random Choices] load balancer from a [`Stream`] of [`Change`].
 ///
 /// See [module](mod@crate::balance::p2c) for more information.
 ///
-/// [Power of Two Random Choice]: http://www.eecs.harvard.edu/%7Emichaelm/postscripts/handbook2001.pdf
+/// [Power of Two Random Choices]: http://www.eecs.harvard.edu/%7Emichaelm/postscripts/handbook2001.pdf
 pub fn balance<St, Key, S>(
     changes: St,
 ) -> (

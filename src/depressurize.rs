@@ -1,5 +1,5 @@
 //! In [`burger`](crate) backpressure is exerted by [`Service::acquire`]. The
-//! [ServiceExt::depressurize] combinator returns [`Depressurize`], which moves the
+//! [`ServiceExt::depressurize`] combinator returns [`Depressurize`], which moves the
 //! [`Service::acquire`] execution into the [`Service::call`], causing [`Service::acquire`] to
 //! resolve immediately.
 //!
