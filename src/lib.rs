@@ -237,7 +237,7 @@ pub trait ServiceExt<Request>: Service<Request> {
         Leak::new(self)
     }
 
-    /// Wraps as [Either::Left]. Related to [right](ServiceExt::right).
+    /// Wraps as [Either::Left]. For the other variant see [ServiceExt::right].
     ///
     /// See the [module](either) for more information.
     fn left<T>(self) -> Either<Self, T>
@@ -247,7 +247,7 @@ pub trait ServiceExt<Request>: Service<Request> {
         Either::Left(self)
     }
 
-    /// Wraps as [Either::Right]. Related to [left](ServiceExt::left).
+    /// Wraps as [Either::Right]. For the other variant see [ServiceExt::right].
     ///
     /// See the [module](either) for more information.
     fn right<T>(self) -> Either<T, Self>
