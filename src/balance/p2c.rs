@@ -1,5 +1,6 @@
-//! The [balance] function returns [Balance], which implements the [Power of Two Random Choice]
-//! load balancing algorithm, The implementation acquires two permits and then chooses the lowest [`Load`] of the two.
+//! The [`balance`] function returns [`Balance`], which implements the [Power of Two Random Choice]
+//! load balancing algorithm, The implementation acquires two permits and then chooses the lowest
+//! [`Load`] of the two.
 
 use std::{
     convert::Infallible,
@@ -100,7 +101,7 @@ where
     }
 }
 
-/// A wrapper [`Service`] for the [balance] constructor.
+/// A wrapper [`Service`] for the [`balance`] constructor.
 ///
 /// See the [module](crate::balance::p2c) for more information.
 #[derive(Debug)]
@@ -169,7 +170,7 @@ impl<T> DerefMut for EitherLock<'_, T> {
 #[non_exhaustive]
 pub struct Terminated;
 
-/// Constructs a [Power of Two Random Choice] load balancer from a [Stream] of [Change].
+/// Constructs a [Power of Two Random Choice] load balancer from a [`Stream`] of [`Change`].
 ///
 /// See [module](mod@crate::balance::p2c) for more information.
 ///

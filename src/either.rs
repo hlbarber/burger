@@ -9,14 +9,17 @@
 //! ```rust
 //! use burger::*;
 //!
-//! # let condition = true;
-//! let svc = service_fn(|x| x + 2);
+//! # #[tokio::main]
+//! # async fn main() {
+//! # let max_concurrency = Some(3);
+//! let svc = service_fn(|x| async move { x + 2 });
 //! let svc = if let Some(some) = max_concurrency {
 //!     svc.concurrency_limit(some).load_shed().left()
 //! } else {
 //!     svc.load_shed().right()
 //! };
 //! let response = svc.oneshot(10u32).await;
+//! # }
 //! ```
 //!
 //! # Load
