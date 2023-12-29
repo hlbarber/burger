@@ -17,7 +17,7 @@ async fn main() {
     tracing_subscriber::fmt().init();
 
     const N_SERVICES: u64 = 4;
-    const LATENCY_RANGE_MS: Range<u64> = 10..500;
+    const LATENCY_RANGE_MS: Range<u64> = 10..250;
 
     let stream = iter(0..N_SERVICES).map(|index| {
         let latency_ms = 3 * N_SERVICES * rand::thread_rng().gen_range(LATENCY_RANGE_MS);
@@ -33,7 +33,7 @@ async fn main() {
     let _ = worker.await;
 
     let mut futures_unordered = FuturesUnordered::new();
-    loop {
+    for _ in 0..100 {
         let load_profile = svc.load_profile().await;
         tracing::info!(?load_profile);
 
