@@ -30,6 +30,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: fmt
       - run: cargo fmt --check
 
   examples:
@@ -38,6 +40,8 @@ jobs:
     strategy:
       fail-fast: false
     timeout-minutes: 20
+    env:
+      MIRIFLAGS: -Zmiri-disable-isolation
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
