@@ -70,7 +70,7 @@ where
     }
 
     fn remove(&mut self, key: &Key) -> Option<S> {
-        self.services.remove(key)
+        self.services.swap_remove(key)
     }
 
     fn is_empty(&self) -> bool {
