@@ -22,7 +22,7 @@
 
 use std::{any, fmt, future::Future};
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Middleware, Service};
 
 /// A wrapper for the [`ServiceExt::then`](crate::ServiceExt::then) combinator.
 ///
@@ -90,5 +90,20 @@ where
 
     fn load(&self) -> Self::Metric {
         self.inner.load()
+    }
+}
+
+impl<S, T, F> Middleware<S> for Then<T, F>
+where
+    T: Middleware<S>,
+{
+    type Service = Then<T::Service, F>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner, closure } = self;
+        Then {
+            inner: inner.apply(svc),
+            closure,
+        }
     }
 }

@@ -23,7 +23,7 @@
 
 use std::{fmt, sync::Arc};
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Middleware, Service};
 
 /// A wrapper [`Service`] for the [`ServiceExt::leak`](crate::ServiceExt::leak) combinator.
 ///
@@ -94,5 +94,21 @@ where
 
     fn load(&self) -> Self::Metric {
         self.inner.load()
+    }
+}
+
+impl<'t, S, T> Middleware<S> for Leak<'t, T>
+where
+    T: Middleware<S>,
+{
+    type Service = Leak<'t, T::Service>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner, _ref } = self;
+        let inner = Arc::into_inner(inner).expect("there cannot be inflight requests");
+        Leak {
+            inner: Arc::new(inner.apply(svc)),
+            _ref,
+        }
     }
 }

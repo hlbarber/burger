@@ -7,7 +7,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::Service;
+use crate::{Middleware, Service};
 
 /// A measurement of load on a [`Service`].
 pub trait Load {
@@ -90,5 +90,20 @@ impl<S> Load for PendingRequests<S> {
 
     fn load(&self) -> Self::Metric {
         self.count.load(Ordering::Acquire)
+    }
+}
+
+impl<S, T> Middleware<S> for PendingRequests<T>
+where
+    T: Middleware<S>,
+{
+    type Service = PendingRequests<T::Service>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner, count } = self;
+        PendingRequests {
+            inner: inner.apply(svc),
+            count,
+        }
     }
 }

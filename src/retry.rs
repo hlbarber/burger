@@ -57,7 +57,7 @@
 
 use std::fmt;
 
-use crate::{load::Load, Service, ServiceExt};
+use crate::{load::Load, Middleware, Service, ServiceExt};
 
 /// A retry policy allows for customization of [Retry].
 ///
@@ -215,5 +215,20 @@ where
 
     fn load(&self) -> Self::Metric {
         self.inner.load()
+    }
+}
+
+impl<S, T, P> Middleware<S> for Retry<T, P>
+where
+    T: Middleware<S>,
+{
+    type Service = Retry<T::Service, P>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner, policy } = self;
+        Retry {
+            inner: inner.apply(svc),
+            policy,
+        }
     }
 }

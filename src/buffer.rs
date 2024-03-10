@@ -41,7 +41,7 @@ use std::fmt;
 use futures_util::FutureExt;
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Middleware, Service};
 
 /// A wrapper [`Service`] for the [`ServiceExt::buffer`](crate::ServiceExt::buffer) combinator.
 ///
@@ -146,5 +146,20 @@ where
 
     fn load(&self) -> Self::Metric {
         self.inner.load()
+    }
+}
+
+impl<S, T> Middleware<S> for Buffer<T>
+where
+    T: Middleware<S>,
+{
+    type Service = Buffer<T::Service>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner, semaphore } = self;
+        Buffer {
+            inner: inner.apply(svc),
+            semaphore,
+        }
     }
 }

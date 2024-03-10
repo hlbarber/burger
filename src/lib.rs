@@ -64,7 +64,7 @@ pub mod service_fn;
 pub mod steer;
 pub mod then;
 
-use std::sync::Arc;
+use std::{convert::Infallible, sync::Arc};
 
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
@@ -359,5 +359,52 @@ where
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         S::call(permit, request).await
+    }
+}
+
+/// A middleware, used to incrementally add behaviour to a [`Service`].
+pub trait Middleware<S> {
+    /// The resultant service.
+    type Service;
+
+    /// Applies this middleware to an existing service.
+    fn apply(self, svc: S) -> Self::Service;
+}
+
+/// The root of a chain of [`Middleware`]s.
+///
+/// The [`ServiceExt`] combinators can be used to extend with additional middleware.
+///
+/// # Example
+///
+/// ```
+/// use burger::*;
+///
+/// let middleware = MiddlewareBuilder.concurrency_limit(3).buffer(2).load_shed();
+/// let svc = service_fn(|x: u32| async move { x.to_string() });
+/// let svc = middleware.apply(svc);
+/// ```
+#[derive(Debug, Clone)]
+pub struct MiddlewareBuilder;
+
+impl Service<Infallible> for MiddlewareBuilder {
+    type Permit<'a> = ();
+    type Response = Infallible;
+
+    async fn acquire(&self) -> Self::Permit<'_> {}
+
+    async fn call<'a>(_permit: Self::Permit<'a>, request: Infallible) -> Self::Response
+    where
+        Self: 'a,
+    {
+        request
+    }
+}
+
+impl<S> Middleware<S> for MiddlewareBuilder {
+    type Service = S;
+
+    fn apply(self, svc: S) -> Self::Service {
+        svc
     }
 }

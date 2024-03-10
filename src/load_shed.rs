@@ -38,7 +38,7 @@
 
 use futures_util::FutureExt;
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Middleware, Service};
 
 /// A wrapper [`Service`] for the [`ServiceExt::load_shed`](crate::ServiceExt::load_shed)
 /// combinator.
@@ -85,5 +85,19 @@ where
 
     fn load(&self) -> Self::Metric {
         self.inner.load()
+    }
+}
+
+impl<S, T> Middleware<S> for LoadShed<T>
+where
+    T: Middleware<S>,
+{
+    type Service = LoadShed<T::Service>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner } = self;
+        LoadShed {
+            inner: inner.apply(svc),
+        }
     }
 }

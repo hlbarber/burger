@@ -22,7 +22,7 @@
 
 use std::{any, fmt};
 
-use crate::Service;
+use crate::{Middleware, Service};
 
 /// A wrapper [`Service`] for the [`ServiceExt::map`](crate::ServiceExt::map) combinator.
 ///
@@ -78,5 +78,20 @@ where
 
     async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
         (permit.closure)(S::call(permit.inner, request).await)
+    }
+}
+
+impl<S, T, F> Middleware<S> for Map<T, F>
+where
+    T: Middleware<S>,
+{
+    type Service = Map<T::Service, F>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner, closure } = self;
+        Map {
+            inner: inner.apply(svc),
+            closure,
+        }
     }
 }

@@ -31,7 +31,7 @@ use std::fmt;
 
 use tokio::sync::{Semaphore, SemaphorePermit};
 
-use crate::{load::Load, Service};
+use crate::{load::Load, Middleware, Service};
 
 /// A wrapper for the [`ServiceExt::concurrency_limit`](crate::ServiceExt::concurrency_limit)
 /// combinator.
@@ -103,5 +103,20 @@ where
 
     fn load(&self) -> Self::Metric {
         self.inner.load()
+    }
+}
+
+impl<S, T> Middleware<S> for ConcurrencyLimit<T>
+where
+    T: Middleware<S>,
+{
+    type Service = ConcurrencyLimit<T::Service>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner, semaphore } = self;
+        ConcurrencyLimit {
+            inner: inner.apply(svc),
+            semaphore,
+        }
     }
 }

@@ -27,7 +27,7 @@
 //!
 //! The [`Load::load`] on [`Depressurize`] defers to the inner service.
 
-use crate::{load::Load, Service, ServiceExt};
+use crate::{load::Load, Middleware, Service, ServiceExt};
 
 /// A wrapper for the [`ServiceExt::depressurize`] combinator.
 ///
@@ -69,5 +69,19 @@ where
 
     fn load(&self) -> Self::Metric {
         self.inner.load()
+    }
+}
+
+impl<S, T> Middleware<S> for Depressurize<T>
+where
+    T: Middleware<S>,
+{
+    type Service = Depressurize<T::Service>;
+
+    fn apply(self, svc: S) -> Self::Service {
+        let Self { inner } = self;
+        Depressurize {
+            inner: inner.apply(svc),
+        }
     }
 }
