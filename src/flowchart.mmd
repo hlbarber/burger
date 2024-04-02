@@ -14,6 +14,7 @@ flowchart TD
     E --> |Shed load| ServiceExt::load_shed
     D --> |Increase backpressure| F{ }
     F --> |Limit concurrency| ServiceExt::concurrency_limit
+    F --> |Limit rate| ServiceExt::rate_limit
     C --> |Modify response| G{ }
     G --> |Synchronously| ServiceExt::map
     G --> |Asychronously| ServiceExt::then

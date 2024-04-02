@@ -58,13 +58,14 @@ pub mod leak;
 pub mod load;
 pub mod load_shed;
 pub mod map;
+pub mod rate_limit;
 pub mod retry;
 pub mod select;
 pub mod service_fn;
 pub mod steer;
 pub mod then;
 
-use std::{convert::Infallible, sync::Arc};
+use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
@@ -74,6 +75,7 @@ use leak::Leak;
 use load::{Load, PendingRequests};
 use load_shed::LoadShed;
 use map::Map;
+use rate_limit::RateLimit;
 use retry::Retry;
 use then::Then;
 use tokio::sync::{Mutex, RwLock};
@@ -195,6 +197,16 @@ pub trait ServiceExt<Request>: Service<Request> {
         Self: Sized,
     {
         Buffer::new(self, capacity)
+    }
+
+    /// Applies rate limiting to the service with a specified interval and number of permits.
+    ///
+    /// See the [module](rate_limit) for more information.
+    fn rate_limit(self, interval: Duration, permits: usize) -> RateLimit<Self>
+    where
+        Self: Sized,
+    {
+        RateLimit::new(self, interval, permits)
     }
 
     /// Applies retries to tbe service with a specified [Policy](crate::retry::Policy).
