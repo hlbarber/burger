@@ -272,6 +272,22 @@ pub trait ServiceExt<Request>: Service<Request> {
 
 impl<Request, S> ServiceExt<Request> for S where S: Service<Request> {}
 
+/// A fallible [`Service`].
+pub trait TryService<Request>: Service<Request, Response = Result<Self::Ok, Self::Error>> {
+    /// The [`Result::Ok`] variant of the [`Service::Response`].
+    type Ok;
+    /// The [`Result::Err`] variant of the [`Service::Response`].
+    type Error;
+}
+
+impl<Request, Ok, Error, S> TryService<Request> for S
+where
+    S: Service<Request, Response = Result<Ok, Error>>,
+{
+    type Ok = Ok;
+    type Error = Error;
+}
+
 impl<Request, S> Service<Request> for Arc<S>
 where
     S: Service<Request>,
