@@ -80,8 +80,6 @@ use retry::Retry;
 use then::Then;
 use tokio::sync::{Mutex, RwLock};
 
-#[doc(inline)]
-pub use balance::p2c::balance as balance_p2c;
 #[cfg(feature = "compat")]
 #[doc(inline)]
 pub use compat::compat;

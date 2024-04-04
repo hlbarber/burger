@@ -1,4 +1,4 @@
-//! The [`balance`] function returns [`Balance`], which implements the
+//! The [`p2c`] function returns [`Balance`], which implements the
 //! [Power of Two Random Choices] load balancing algorithm, The implementation acquires two
 //! permits and then chooses the lowest [`Load`] of the two.
 //!
@@ -18,7 +18,7 @@
 //!     .map(|svc| svc.pending_requests())
 //!     .enumerate()
 //!     .map(|(index, svc)| balance::Change::Insert(index, svc));
-//! let (svc, worker) = balance_p2c(svc_stream);
+//! let (svc, worker) = balance::p2c(svc_stream);
 //! tokio::spawn(worker);
 //! let response = svc.oneshot(5u32).await;
 //! # }
@@ -76,6 +76,10 @@ where
     fn is_empty(&self) -> bool {
         self.services.is_empty()
     }
+
+    fn len(&self) -> usize {
+        self.services.len()
+    }
 }
 
 impl<Request, S, Key> Service<Request> for BalanceInner<S, Key>
@@ -124,7 +128,7 @@ where
     }
 }
 
-/// A wrapper [`Service`] for the [`balance`] constructor.
+/// A [`Service`] for the [`p2c`] constructor.
 ///
 /// See the [module](crate::balance::p2c) for more information.
 #[derive(Debug)]
@@ -193,12 +197,13 @@ impl<T> DerefMut for EitherLock<'_, T> {
 #[non_exhaustive]
 pub struct Terminated;
 
-/// Constructs a [Power of Two Random Choices] load balancer from a [`Stream`] of [`Change`].
+/// Constructs a [Power of Two Random Choices] load balancer, [`Balance`] and a worker [`Future`],
+/// from a [`Stream`] of [`Change`].
 ///
 /// See [module](mod@crate::balance::p2c) for more information.
 ///
 /// [Power of Two Random Choices]: http://www.eecs.harvard.edu/%7Emichaelm/postscripts/handbook2001.pdf
-pub fn balance<St, Key, S>(
+pub fn p2c<St, Key, S>(
     changes: St,
 ) -> (
     Balance<S, Key>,
@@ -234,9 +239,11 @@ where
                 match new_change {
                     Change::Insert(key, service) => {
                         guard.insert(key, Leak::new(Arc::new(service)));
+                        tracing::trace!(len = guard.len(), "inserted service");
                     }
                     Change::Remove(key) => {
-                        guard.remove(&key);
+                        let success = guard.remove(&key).is_some();
+                        tracing::trace!(len = guard.len(), success, "removed service")
                     }
                 };
 

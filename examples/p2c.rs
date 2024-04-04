@@ -1,7 +1,7 @@
 use std::{ops::Range, time::Duration};
 
 use burger::{
-    balance::{p2c::balance, Change},
+    balance::{self, Change},
     service_fn::service_fn,
     ServiceExt,
 };
@@ -29,7 +29,7 @@ async fn main() {
         Change::Insert(index, svc)
     });
 
-    let (svc, worker) = balance(stream);
+    let (svc, worker) = balance::p2c(stream);
     let _ = worker.await;
 
     let mut futures_unordered = FuturesUnordered::new();
