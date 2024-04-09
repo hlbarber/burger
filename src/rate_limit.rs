@@ -21,7 +21,8 @@
 //!
 //! # #[tokio::main]
 //! # async fn main() {
-//! let svc = service_fn(|x: u32| async move { x.to_string() }).rate_limit(Duration::from_secs(1), 5);
+//! let svc =
+//!     service_fn(|x: u32| async move { x.to_string() }).rate_limit(Duration::from_secs(1), 5);
 //! let response = svc.oneshot(1).await;
 //! # let _ = response;
 //! # }
