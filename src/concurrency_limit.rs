@@ -85,8 +85,8 @@ where
 
     async fn acquire(&self) -> Self::Permit<'_> {
         ConcurrencyLimitPermit {
-            inner: self.inner.acquire().await,
             _semaphore_permit: self.semaphore.acquire().await.expect("not closed"),
+            inner: self.inner.acquire().await,
         }
     }
 
