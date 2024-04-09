@@ -74,7 +74,9 @@ where
     async fn acquire(&self) -> Self::Permit<'_> {
         LeakPermit {
             _svc: self.inner.clone(),
-            inner: unsafe { std::mem::transmute(self.inner.acquire().await) },
+            inner: unsafe {
+                std::mem::transmute::<S::Permit<'_>, S::Permit<'t>>(self.inner.acquire().await)
+            },
         }
     }
 
