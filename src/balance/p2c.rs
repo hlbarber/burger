@@ -130,7 +130,7 @@ where
 
 /// A [`Service`] for the [`p2c`] constructor.
 ///
-/// See the [module](crate::balance::p2c) for more information.
+/// See the [module](mod@crate::balance::p2c) for more information.
 #[derive(Debug)]
 pub struct Balance<S, Key> {
     inner: Arc<RwLock<BalanceInner<Leak<'static, S>, Key>>>,
