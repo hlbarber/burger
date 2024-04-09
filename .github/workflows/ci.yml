@@ -49,4 +49,4 @@ jobs:
           components: miri
       - uses: taiki-e/install-action@cargo-hack
       - run: cargo hack run --example basic --each-feature
-      - run: cargo hack miri run --example balance --each-feature
+      - run: cargo hack miri run --example p2c --each-feature
