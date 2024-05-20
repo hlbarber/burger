@@ -5,6 +5,7 @@ edition = "2021"
 description = "An experimental service framework."
 license = "MIT"
 homepage = "https://github.com/hlbarber/burger"
+repository = "https://github.com/hlbarber/burger"
 
 [features]
 compat = ["dep:tower"]
