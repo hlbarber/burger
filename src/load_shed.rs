@@ -60,19 +60,15 @@ where
     S: Service<Request>,
 {
     type Response = Result<S::Response, Request>;
-    type Permit<'a> = Option<S::Permit<'a>>
-    where
-        S: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
-        self.inner.acquire().now_or_never()
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        if let Some(permit) = permit {
-            Ok(S::call(permit, request).await)
-        } else {
-            Err(request)
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
+        let permit = self.inner.acquire().now_or_never();
+        async |request| {
+            if let Some(permit) = permit {
+                Ok(permit(request).await)
+            } else {
+                Err(request)
+            }
         }
     }
 }

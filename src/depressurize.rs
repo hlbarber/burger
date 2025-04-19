@@ -27,7 +27,7 @@
 //!
 //! The [`Load::load`] on [`Depressurize`] defers to the inner service.
 
-use crate::{load::Load, Middleware, Service, ServiceExt};
+use crate::{load::Load, Middleware, Service};
 
 /// A wrapper for the [`ServiceExt::depressurize`] combinator.
 ///
@@ -48,16 +48,9 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = &'a S
-    where
-        S: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
-        &self.inner
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        permit.oneshot(request).await
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
+        async |request| self.inner.acquire().await(request).await
     }
 }
 

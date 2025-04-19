@@ -18,7 +18,7 @@
 //!
 //! This has _no_ [`Load`](crate::load::Load) implementation.
 
-use std::{any, fmt, future::Future};
+use std::{any, fmt};
 
 use crate::Service;
 
@@ -38,20 +38,14 @@ impl<F> fmt::Debug for ServiceFn<F> {
     }
 }
 
-impl<Request, Fut, F> Service<Request> for ServiceFn<F>
+impl<Request, F, Response> Service<Request> for ServiceFn<F>
 where
-    F: Fn(Request) -> Fut,
-    Fut: Future,
+    F: AsyncFn(Request) -> Response,
 {
-    type Response = Fut::Output;
-    type Permit<'a> = &'a F where F: 'a;
+    type Response = Response;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
         &self.closure
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        permit(request).await
     }
 }
 

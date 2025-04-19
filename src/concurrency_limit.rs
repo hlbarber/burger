@@ -27,9 +27,7 @@
 //!
 //! The [`Load::load`] on [ConcurrencyLimit] defers to the inner service.
 
-use std::fmt;
-
-use tokio::sync::{Semaphore, SemaphorePermit};
+use tokio::sync::Semaphore;
 
 use crate::{load::Load, Middleware, Service};
 
@@ -52,46 +50,20 @@ impl<S> ConcurrencyLimit<S> {
     }
 }
 
-/// The [`Service::Permit`] type for [`ConcurrencyLimit`].
-pub struct ConcurrencyLimitPermit<'a, S, Request>
-where
-    S: Service<Request> + 'a,
-{
-    inner: S::Permit<'a>,
-    _semaphore_permit: SemaphorePermit<'a>,
-}
-
-impl<'a, S, Request> fmt::Debug for ConcurrencyLimitPermit<'a, S, Request>
-where
-    S: Service<Request>,
-    S::Permit<'a>: fmt::Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ConcurrencyLimitPermit")
-            .field("inner", &self.inner)
-            .field("_semaphore_permit", &self._semaphore_permit)
-            .finish()
-    }
-}
-
 impl<Request, S> Service<Request> for ConcurrencyLimit<S>
 where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = ConcurrencyLimitPermit<'a, S, Request>
-    where
-        S: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
-        ConcurrencyLimitPermit {
-            _semaphore_permit: self.semaphore.acquire().await.expect("not closed"),
-            inner: self.inner.acquire().await,
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
+        let semaphore = self.semaphore.acquire().await.expect("not closed");
+        let permit = self.inner.acquire().await;
+        async |request| {
+            let response = permit(request).await;
+            drop(semaphore);
+            response
         }
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        S::call(permit.inner, request).await
     }
 }
 

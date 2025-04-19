@@ -54,7 +54,6 @@ pub mod compat;
 pub mod concurrency_limit;
 pub mod depressurize;
 pub mod either;
-pub mod leak;
 pub mod load;
 pub mod load_shed;
 pub mod map;
@@ -71,14 +70,12 @@ use buffer::Buffer;
 use concurrency_limit::ConcurrencyLimit;
 use depressurize::Depressurize;
 use either::Either;
-use leak::Leak;
 use load::{Load, PendingRequests};
 use load_shed::LoadShed;
 use map::Map;
 use rate_limit::RateLimit;
 use retry::Retry;
 use then::Then;
-use tokio::sync::{Mutex, RwLock};
 
 #[cfg(feature = "compat")]
 #[doc(inline)]
@@ -107,22 +104,30 @@ pub use steer::steer;
 pub trait Service<Request> {
     /// The type produced by the service call.
     type Response;
-    /// The type of the permit required to call the service.
-    type Permit<'a>
-    where
-        Self: 'a;
 
     /// Obtains a permit.
-    async fn acquire(&self) -> Self::Permit<'_>;
-
-    /// Consumes a permit to call the service.
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
-    where
-        Self: 'a;
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response;
 }
 
 /// An extension trait for [`Service`].
 pub trait ServiceExt<Request>: Service<Request> {
+    async fn acquire_owned<'a>(self: Arc<Self>) -> impl AsyncFnOnce(Request) -> Self::Response + 'a
+    where
+        Request: 'a,
+        Self: 'a,
+    {
+        let this = Arc::clone(&self);
+        let this_ref: &Self = this.as_ref();
+        let this_ref: &'a Self = unsafe { std::mem::transmute(this_ref) };
+        let permit = this_ref.acquire().await;
+
+        async move |request| {
+            let response = permit(request).await;
+            drop(this);
+            response
+        }
+    }
+
     /// Acquires the [`Service::Permit`] and then immediately uses it to [call](Service::call) the
     /// [`Service`].
     ///
@@ -141,8 +146,7 @@ pub trait ServiceExt<Request>: Service<Request> {
     where
         Self: Sized,
     {
-        let permit = self.acquire().await;
-        Self::call(permit, request).await
+        self.acquire().await(request).await
     }
 
     /// Extends the service using a closure accepting [`Self::Response`](Service::Response) and
@@ -237,16 +241,6 @@ pub trait ServiceExt<Request>: Service<Request> {
         PendingRequests::new(self)
     }
 
-    /// Extends the lifetime of the permit.
-    ///
-    /// See the [module](leak) for more information.
-    fn leak<'t>(self: Arc<Self>) -> Leak<'t, Self>
-    where
-        Self: Sized,
-    {
-        Leak::new(self)
-    }
-
     /// Wraps as [Either::Left]. For the other variant see [ServiceExt::right].
     ///
     /// See the [module](either) for more information.
@@ -291,16 +285,9 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
-    where
-        S: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
         S::acquire(self).await
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        S::call(permit, request).await
     }
 }
 
@@ -320,19 +307,9 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
-    where
-        S:'a, 't: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
         S::acquire(self).await
-    }
-
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
-    where
-        Self: 'a,
-    {
-        S::call(permit, request).await
     }
 }
 
@@ -344,47 +321,6 @@ where
 
     fn load(&self) -> Self::Metric {
         S::load(self)
-    }
-}
-
-impl<Request, Permit, S> Service<Request> for Mutex<S>
-where
-    // NOTE: These bounds seem too tight
-    for<'a> S: Service<Request, Permit<'a> = Permit>,
-    S: 'static,
-{
-    type Response = S::Response;
-    type Permit<'a> = Permit
-    where
-        S: 'a;
-
-    async fn acquire(&self) -> Self::Permit<'_> {
-        let guard = self.lock().await;
-        guard.acquire().await
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        S::call(permit, request).await
-    }
-}
-
-impl<Request, S, Permit> Service<Request> for RwLock<S>
-where
-    // NOTE: These bounds seem too tight
-    for<'a> S: Service<Request, Permit<'a> = Permit>,
-    S: 'static,
-{
-    type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
-    where
-        Self: 'a;
-
-    async fn acquire(&self) -> Self::Permit<'_> {
-        self.read().await.acquire().await
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        S::call(permit, request).await
     }
 }
 
@@ -414,16 +350,10 @@ pub trait Middleware<S> {
 pub struct MiddlewareBuilder;
 
 impl Service<Infallible> for MiddlewareBuilder {
-    type Permit<'a> = ();
     type Response = Infallible;
 
-    async fn acquire(&self) -> Self::Permit<'_> {}
-
-    async fn call<'a>(_permit: Self::Permit<'a>, request: Infallible) -> Self::Response
-    where
-        Self: 'a,
-    {
-        request
+    async fn acquire(&self) -> impl AsyncFnOnce(Infallible) -> Self::Response {
+        async |request| request
     }
 }
 

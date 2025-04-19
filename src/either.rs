@@ -46,24 +46,15 @@ where
     B: Service<Request, Response = A::Response>,
 {
     type Response = A::Response;
-    type Permit<'a> = Either<A::Permit<'a>, B::Permit<'a>>
-    where
-        Self: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
-        match self {
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> A::Response {
+        let permit = match self {
             Either::Left(left) => Either::Left(left.acquire().await),
             Either::Right(right) => Either::Right(right.acquire().await),
-        }
-    }
-
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
-    where
-        Self: 'a,
-    {
-        match permit {
-            Either::Left(permit) => A::call(permit, request).await,
-            Either::Right(permit) => B::call(permit, request).await,
+        };
+        async |request| match permit {
+            Either::Left(left) => left(request).await,
+            Either::Right(right) => right(request).await,
         }
     }
 }

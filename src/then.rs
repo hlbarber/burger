@@ -20,7 +20,7 @@
 //!
 //! The [`Load::load`] on [Then] defers to the inner service.
 
-use std::{any, fmt, future::Future};
+use std::future::Future;
 
 use crate::{load::Load, Middleware, Service};
 
@@ -39,28 +39,6 @@ impl<S, F> Then<S, F> {
     }
 }
 
-/// The [`Service::Permit`] type for [`Then`].
-pub struct ThenPermit<'a, S, F, Request>
-where
-    S: Service<Request> + 'a,
-{
-    inner: S::Permit<'a>,
-    closure: &'a F,
-}
-
-impl<'a, S, F, Request> fmt::Debug for ThenPermit<'a, S, F, Request>
-where
-    S: Service<Request>,
-    S::Permit<'a>: fmt::Debug,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ThenPermit")
-            .field("inner", &self.inner)
-            .field("closure", &format_args!("{}", any::type_name::<F>()))
-            .finish()
-    }
-}
-
 impl<Request, S, F, Fut> Service<Request> for Then<S, F>
 where
     S: Service<Request>,
@@ -68,17 +46,10 @@ where
     Fut: Future,
 {
     type Response = Fut::Output;
-    type Permit<'a> = ThenPermit<'a, S, F, Request> where S: 'a, F: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
-        ThenPermit {
-            inner: self.inner.acquire().await,
-            closure: &self.closure,
-        }
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        (permit.closure)(S::call(permit.inner, request).await).await
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
+        let inner_permit = self.inner.acquire().await;
+        async |request| (self.closure)(inner_permit(request).await).await
     }
 }
 

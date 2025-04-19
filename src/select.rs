@@ -83,22 +83,12 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
-    where
-        S: 'a, I: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
         // This `Box::pin` could be removed with `return_type_notation`.
         let iter = self.services.into_iter().map(|s| s.acquire()).map(Box::pin);
         let (permit, _, _) = select_all(iter).await;
         permit
-    }
-
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
-    where
-        Self: 'a,
-    {
-        S::call(permit, request).await
     }
 }
 

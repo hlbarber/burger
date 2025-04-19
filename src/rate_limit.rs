@@ -31,7 +31,7 @@ use std::time::{Duration, Instant};
 
 use tokio::{
     select,
-    sync::{Mutex, Semaphore, SemaphorePermit},
+    sync::{Mutex, Semaphore},
 };
 
 use crate::Service;
@@ -60,27 +60,13 @@ impl<S> RateLimit<S> {
     }
 }
 
-/// The [`Service::Permit`] type for [`RateLimit`].
-#[derive(Debug)]
-pub struct RateLimitPermit<'a, S, Request>
-where
-    S: Service<Request> + 'a,
-{
-    inner: S::Permit<'a>,
-    _permit: SemaphorePermit<'a>,
-}
-
 impl<Request, S> Service<Request> for RateLimit<S>
 where
     S: Service<Request>,
 {
     type Response = S::Response;
 
-    type Permit<'a> = RateLimitPermit<'a, S, Request>
-    where
-        Self: 'a;
-
-    async fn acquire(&self) -> Self::Permit<'_> {
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
         let fut = async move {
             let mut guard = self.last_update.lock().await;
             loop {
@@ -95,21 +81,14 @@ where
             }
         };
         let acquire = self.semaphore.acquire();
-        let permit = select! { permit = acquire => { permit }, never = fut => { never } };
+        let semaphore_permit = select! { permit = acquire => { permit }, never = fut => { never } }
+            .expect("semaphore not dropped");
+        let permit = self.inner.acquire().await;
 
-        RateLimitPermit {
-            _permit: permit.unwrap(),
-            inner: self.inner.acquire().await,
+        async |request| {
+            semaphore_permit.forget();
+            permit(request).await
         }
-    }
-
-    async fn call<'a>(permit: Self::Permit<'a>, request: Request) -> Self::Response
-    where
-        Self: 'a,
-    {
-        let RateLimitPermit { inner, _permit } = permit;
-        _permit.forget();
-        S::call(inner, request).await
     }
 }
 
