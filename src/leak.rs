@@ -49,7 +49,7 @@ where
     inner: S::Permit<'t>,
 }
 
-impl<'t, S, Request> fmt::Debug for LeakPermit<'t, S, Request>
+impl<S, Request> fmt::Debug for LeakPermit<'_, S, Request>
 where
     S: Service<Request> + fmt::Debug,
     for<'a> S::Permit<'a>: fmt::Debug,
@@ -67,9 +67,11 @@ where
     S: Service<Request> + 't,
 {
     type Response = S::Response;
-    type Permit<'a> = LeakPermit<'t, S, Request>
+    type Permit<'a>
+        = LeakPermit<'t, S, Request>
     where
-        S: 'a, 't: 'a;
+        S: 'a,
+        't: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         LeakPermit {
@@ -88,7 +90,7 @@ where
     }
 }
 
-impl<'t, S> Load for Leak<'t, S>
+impl<S> Load for Leak<'_, S>
 where
     S: Load,
 {

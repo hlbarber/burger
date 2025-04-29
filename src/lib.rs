@@ -291,7 +291,8 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
+    type Permit<'a>
+        = S::Permit<'a>
     where
         S: 'a;
 
@@ -320,9 +321,11 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
+    type Permit<'a>
+        = S::Permit<'a>
     where
-        S:'a, 't: 'a;
+        S: 'a,
+        't: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         S::acquire(self).await
@@ -336,7 +339,7 @@ where
     }
 }
 
-impl<'t, S> Load for &'t S
+impl<S> Load for &S
 where
     S: Load,
 {
@@ -354,7 +357,8 @@ where
     S: 'static,
 {
     type Response = S::Response;
-    type Permit<'a> = Permit
+    type Permit<'a>
+        = Permit
     where
         S: 'a;
 
@@ -375,7 +379,8 @@ where
     S: 'static,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
+    type Permit<'a>
+        = S::Permit<'a>
     where
         Self: 'a;
 
