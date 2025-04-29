@@ -87,9 +87,11 @@ where
     S: Service<Request> + Load,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
+    type Permit<'a>
+        = S::Permit<'a>
     where
-        S: 'a, Key: 'a;
+        S: 'a,
+        Key: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         // Race all permits.
@@ -152,7 +154,8 @@ where
     Key: Eq + Hash + 'static,
 {
     type Response = S::Response;
-    type Permit<'a> = LeakPermit::<'static, S, Request>
+    type Permit<'a>
+        = LeakPermit<'static, S, Request>
     where
         Self: 'a;
 

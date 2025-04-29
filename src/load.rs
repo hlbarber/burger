@@ -63,7 +63,8 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = PendingRequestsPermit<'a, S, Request>
+    type Permit<'a>
+        = PendingRequestsPermit<'a, S, Request>
     where
         Self: 'a;
 

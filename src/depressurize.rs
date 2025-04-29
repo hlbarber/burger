@@ -48,7 +48,8 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = &'a S
+    type Permit<'a>
+        = &'a S
     where
         S: 'a;
 

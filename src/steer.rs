@@ -85,7 +85,8 @@ where
     P: Picker<S, Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = SteerPermit<'a, S, P, Request>
+    type Permit<'a>
+        = SteerPermit<'a, S, P, Request>
     where
         Self: 'a;
 

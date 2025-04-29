@@ -46,7 +46,8 @@ where
     S: TowerService<Request>,
 {
     type Response = Result<S::Response, S::Error>;
-    type Permit<'a> = Result<MutexGuard<'a, S>, S::Error>
+    type Permit<'a>
+        = Result<MutexGuard<'a, S>, S::Error>
     where
         S: 'a;
 

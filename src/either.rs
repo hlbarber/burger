@@ -46,7 +46,8 @@ where
     B: Service<Request, Response = A::Response>,
 {
     type Response = A::Response;
-    type Permit<'a> = Either<A::Permit<'a>, B::Permit<'a>>
+    type Permit<'a>
+        = Either<A::Permit<'a>, B::Permit<'a>>
     where
         Self: 'a;
 

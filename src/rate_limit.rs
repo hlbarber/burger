@@ -76,7 +76,8 @@ where
 {
     type Response = S::Response;
 
-    type Permit<'a> = RateLimitPermit<'a, S, Request>
+    type Permit<'a>
+        = RateLimitPermit<'a, S, Request>
     where
         Self: 'a;
 

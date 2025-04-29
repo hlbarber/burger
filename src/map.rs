@@ -67,7 +67,11 @@ where
     F: Fn(S::Response) -> Output,
 {
     type Response = Output;
-    type Permit<'a> = MapPermit<'a, S, F, Request> where S: 'a, F: 'a;
+    type Permit<'a>
+        = MapPermit<'a, S, F, Request>
+    where
+        S: 'a,
+        F: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         MapPermit {

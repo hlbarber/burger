@@ -44,7 +44,10 @@ where
     Fut: Future,
 {
     type Response = Fut::Output;
-    type Permit<'a> = &'a F where F: 'a;
+    type Permit<'a>
+        = &'a F
+    where
+        F: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         &self.closure

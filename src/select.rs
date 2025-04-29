@@ -83,9 +83,11 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = S::Permit<'a>
+    type Permit<'a>
+        = S::Permit<'a>
     where
-        S: 'a, I: 'a;
+        S: 'a,
+        I: 'a;
 
     async fn acquire(&self) -> Self::Permit<'_> {
         // This `Box::pin` could be removed with `return_type_notation`.

@@ -109,7 +109,8 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = BufferPermit<'a, S, Request>
+    type Permit<'a>
+        = BufferPermit<'a, S, Request>
     where
         S: 'a;
 

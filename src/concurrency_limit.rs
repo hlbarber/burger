@@ -79,7 +79,8 @@ where
     S: Service<Request>,
 {
     type Response = S::Response;
-    type Permit<'a> = ConcurrencyLimitPermit<'a, S, Request>
+    type Permit<'a>
+        = ConcurrencyLimitPermit<'a, S, Request>
     where
         S: 'a;
 

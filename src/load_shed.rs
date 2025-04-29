@@ -60,7 +60,8 @@ where
     S: Service<Request>,
 {
     type Response = Result<S::Response, Request>;
-    type Permit<'a> = Option<S::Permit<'a>>
+    type Permit<'a>
+        = Option<S::Permit<'a>>
     where
         S: 'a;
 
