@@ -11,7 +11,7 @@
 //! 2. Uses the inner permit to [`Service::call`] the inner [`Service`].
 //! 3. Calls [`Policy::classify`], with the [`Policy::RequestState`] from (1).
 //! 4. If [`Ok`] then returns the [`Service::Response`], if [`Err`] then returns retries using
-//! [`ServiceExt::oneshot`] to obtain the next permit.
+//!     [`ServiceExt::oneshot`] to obtain the next permit.
 //!
 //! # Example
 //!

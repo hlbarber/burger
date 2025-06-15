@@ -111,7 +111,18 @@ pub trait Service<Request> {
 
 /// An extension trait for [`Service`].
 pub trait ServiceExt<Request>: Service<Request> {
-    async fn acquire_owned<'a>(self: Arc<Self>) -> impl AsyncFnOnce(Request) -> Self::Response + 'a
+    /// Returns the [`Service`] wrapped in an [`Arc`].
+    fn arc(self) -> Arc<Self>
+    where
+        Self: Sized,
+    {
+        Arc::new(self)
+    }
+
+    /// Returns a permit with an extended lifetime.
+    async fn acquire_owned<'a>(
+        self: Arc<Self>,
+    ) -> impl AsyncFnOnce(Request) -> Self::Response + use<'a, Request, Self>
     where
         Request: 'a,
         Self: 'a,
@@ -313,7 +324,7 @@ where
     }
 }
 
-impl<'t, S> Load for &'t S
+impl<S> Load for &S
 where
     S: Load,
 {

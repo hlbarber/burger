@@ -1,7 +1,8 @@
 //! [`tower`] is an established service abstraction.
 //!
 //! A [`tower::Service`] is converted into a [`burger::Service`](crate::Service) using the
-//! [`compat`] function.
+//! [`compat`] function. We require [`Clone`] in order to convert from [`tower`]s
+//! `&mut self` signature to [`burger`]s `&self` signature.
 //!
 //! Note that [`tower`], in general, has no disarm mechanism. This means that
 //! dropping the permit is _not_ sufficient to restore the service to a reasonable state.
@@ -24,12 +25,7 @@
 //!
 //! The [`Load::load`] on [`Compat`] implementation uses [`tower::load::Load`].
 
-use std::{
-    future::poll_fn,
-    sync::{Mutex, MutexGuard},
-};
-
-use tower::{load::Load, Service as TowerService};
+use tower::{load::Load, ServiceExt as _};
 
 use crate::Service;
 
@@ -38,31 +34,18 @@ use crate::Service;
 /// See [module](mod@crate::compat) for more information.
 #[derive(Debug)]
 pub struct Compat<S> {
-    inner: Mutex<S>,
+    inner: S,
 }
 
 impl<Request, S> Service<Request> for Compat<S>
 where
-    S: TowerService<Request>,
+    S: tower::Service<Request> + Clone,
 {
     type Response = Result<S::Response, S::Error>;
-    type Permit<'a> = Result<MutexGuard<'a, S>, S::Error>
-    where
-        S: 'a;
 
-    async fn acquire(&self) -> Self::Permit<'_> {
-        poll_fn(|cx| self.inner.lock().unwrap().poll_ready(cx))
-            .await
-            .map(|_| self.inner.lock().unwrap())
-    }
-
-    async fn call(permit: Self::Permit<'_>, request: Request) -> Self::Response {
-        // https://github.com/rust-lang/rust-clippy/issues/6446
-        let fut = {
-            let mut guard = permit?;
-            guard.call(request)
-        };
-        fut.await
+    async fn acquire(&self) -> impl AsyncFnOnce(Request) -> Self::Response {
+        let svc = self.inner.clone().ready_oneshot().await;
+        async move |request| svc?.call(request).await
     }
 }
 
@@ -70,9 +53,7 @@ where
 ///
 /// See the [module](mod@crate::compat) for more information.
 pub fn compat<S>(inner: S) -> Compat<S> {
-    Compat {
-        inner: Mutex::new(inner),
-    }
+    Compat { inner }
 }
 
 impl<S> Load for Compat<S>
@@ -82,6 +63,6 @@ where
     type Metric = S::Metric;
 
     fn load(&self) -> Self::Metric {
-        self.inner.lock().unwrap().load()
+        self.inner.load()
     }
 }

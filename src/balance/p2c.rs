@@ -26,15 +26,17 @@ use tokio::sync::watch;
 
 use crate::{load::Load, Service, ServiceExt};
 
+/// A handle for a [`Balance`] service, allowing for additional and removal of [services](Service).
 #[derive(Debug)]
-pub struct P2cHandle<S, Key> {
+pub struct Handle<S, Key> {
     sender: watch::Sender<IndexMap<Key, Arc<S>>>,
 }
 
-impl<S, Key> P2cHandle<S, Key>
+impl<S, Key> Handle<S, Key>
 where
     Key: Eq + Hash,
 {
+    /// Adds a service to the collection of [balanced](Balance) services.
     pub fn add_service(&self, key: Key, svc: Arc<S>) -> &Self {
         self.sender.send_modify(|map| {
             map.insert(key, svc);
@@ -42,6 +44,7 @@ where
         self
     }
 
+    /// Removes a service to the collection of [balanced](Balance) services.
     pub fn remove_service(&self, key: &Key) -> &Self {
         self.sender.send_modify(|map| {
             map.swap_remove(key);
@@ -60,8 +63,9 @@ pub struct Balance<S, Key> {
 }
 
 impl<S, Key> Balance<S, Key> {
-    pub fn handle(&self) -> P2cHandle<S, Key> {
-        P2cHandle {
+    /// Returns a [`Handle`] for this [`Balance`].
+    pub fn handle(&self) -> Handle<S, Key> {
+        Handle {
             sender: self.sender.clone(),
         }
     }
@@ -71,6 +75,7 @@ impl<S, Key> Balance<S, Key>
 where
     S: Load,
 {
+    /// Returns all [metrics](Load::Metric) for the services.
     pub async fn load_profile(&self) -> Vec<S::Metric> {
         self.services
             .borrow()
@@ -91,14 +96,19 @@ where
         let mut services = self.services.clone();
 
         // Wait until at least one service.
-        let services: Vec<_> = loop {
-            let index_map = services.borrow_and_update();
-            if index_map.is_empty() {
-                drop(index_map);
-                services.changed().await.expect("sender is alive");
-                continue;
+        let services: Vec<Arc<S>> = {
+            let svcs: Vec<_> = services.borrow_and_update().values().cloned().collect();
+            if !svcs.is_empty() {
+                svcs
+            } else {
+                services
+                    .wait_for(|services| !services.is_empty())
+                    .await
+                    .expect("sender not dropped")
+                    .values()
+                    .cloned()
+                    .collect()
             }
-            break index_map.values().cloned().collect();
         };
 
         // Race all permits.
