@@ -313,7 +313,7 @@ where
     }
 }
 
-impl<'t, Request, S> Service<Request> for &'t S
+impl<Request, S> Service<Request> for &S
 where
     S: Service<Request>,
 {
