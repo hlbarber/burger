@@ -39,7 +39,7 @@
 use futures_util::FutureExt;
 use tokio::sync::Semaphore;
 
-use crate::{load::Load, Middleware, Service};
+use crate::{Middleware, Service, load::Load};
 
 /// A wrapper [`Service`] for the [`ServiceExt::buffer`](crate::ServiceExt::buffer) combinator.
 ///

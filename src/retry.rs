@@ -55,7 +55,7 @@
 //!
 //! The [`Load::load`] on [`Retry`] defers to the inner service.
 
-use crate::{load::Load, Middleware, Service, ServiceExt};
+use crate::{Middleware, Service, ServiceExt, load::Load};
 
 /// A retry policy allows for customization of [Retry].
 ///

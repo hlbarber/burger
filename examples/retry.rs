@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use burger::{retry::Policy, service_fn::service_fn, Service, ServiceExt};
+use burger::{Service, ServiceExt, retry::Policy, service_fn::service_fn};
 
 struct FiniteRetries(usize);
 
@@ -22,7 +22,7 @@ where
 {
     type RequestState<'a> = Attempts<'a>;
 
-    fn create(&self, request: &Request) -> Attempts {
+    fn create(&self, request: &Request) -> Attempts<'_> {
         Attempts {
             max: &self.0,
             request: request.clone(),

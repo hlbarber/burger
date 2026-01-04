@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use burger::{select::select, service_fn, ServiceExt};
+use burger::{ServiceExt, select::select, service_fn};
 use futures_util::future::join_all;
 use tokio::time::sleep;
 

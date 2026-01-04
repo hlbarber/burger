@@ -22,7 +22,7 @@
 
 use std::future::Future;
 
-use crate::{load::Load, Middleware, Service};
+use crate::{Middleware, Service, load::Load};
 
 /// A wrapper for the [`ServiceExt::then`](crate::ServiceExt::then) combinator.
 ///

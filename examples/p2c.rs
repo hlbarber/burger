@@ -1,6 +1,6 @@
 use std::{ops::Range, sync::Arc, time::Duration};
 
-use burger::{balance, service_fn, ServiceExt};
+use burger::{ServiceExt, balance, service_fn};
 use rand::Rng;
 use tokio::time::sleep;
 

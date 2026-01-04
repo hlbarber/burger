@@ -26,7 +26,7 @@
 //!
 //! The [`Load::load`] on [`Either`] defers to the variant.
 
-use crate::{load::Load, Service};
+use crate::{Service, load::Load};
 
 /// A wrapper [`Service`] for [`ServiceExt::left`](crate::ServiceExt::left) and
 /// [`ServiceExt::right`](crate::ServiceExt::right) which consolidates two types.

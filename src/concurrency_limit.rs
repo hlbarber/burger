@@ -29,7 +29,7 @@
 
 use tokio::sync::Semaphore;
 
-use crate::{load::Load, Middleware, Service};
+use crate::{Middleware, Service, load::Load};
 
 /// A wrapper for the [`ServiceExt::concurrency_limit`](crate::ServiceExt::concurrency_limit)
 /// combinator.

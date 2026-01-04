@@ -27,7 +27,7 @@
 //!
 //! The [`Load::load`] on [`Depressurize`] defers to the inner service.
 
-use crate::{load::Load, Middleware, Service};
+use crate::{Middleware, Service, load::Load};
 
 /// A wrapper for the [`ServiceExt::depressurize`] combinator.
 ///

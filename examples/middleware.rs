@@ -1,4 +1,4 @@
-use burger::{service_fn, Middleware, MiddlewareBuilder, ServiceExt};
+use burger::{Middleware, MiddlewareBuilder, ServiceExt, service_fn};
 
 #[tokio::main]
 async fn main() {

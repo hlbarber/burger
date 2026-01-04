@@ -12,7 +12,8 @@
 //! # #[tokio::main]
 //! # async fn main() {
 //! let svc = balance::p2c(svc_stream);
-//! svc.handle().add_service(0, service_fn(|x: u32| ready(2 * x)).pending_requests());
+//! svc.handle()
+//!     .add_service(0, service_fn(|x: u32| ready(2 * x)).pending_requests());
 //! let response = svc.oneshot(5u32).await;
 //! # }
 //! ```
@@ -20,11 +21,11 @@
 //! [Power of Two Random Choices]: http://www.eecs.harvard.edu/%7Emichaelm/postscripts/handbook2001.pdf
 use std::{hash::Hash, sync::Arc};
 
-use futures_util::{stream::FuturesUnordered, FutureExt, StreamExt};
+use futures_util::{FutureExt, StreamExt, stream::FuturesUnordered};
 use indexmap::IndexMap;
 use tokio::sync::watch;
 
-use crate::{load::Load, Service, ServiceExt};
+use crate::{Service, ServiceExt, load::Load};
 
 /// A handle for a [`Balance`] service, allowing for additional and removal of [services](Service).
 #[derive(Debug)]

@@ -38,7 +38,7 @@
 
 use futures_util::FutureExt;
 
-use crate::{load::Load, Middleware, Service};
+use crate::{Middleware, Service, load::Load};
 
 /// A wrapper [`Service`] for the [`ServiceExt::load_shed`](crate::ServiceExt::load_shed)
 /// combinator.

@@ -25,7 +25,7 @@
 //!
 //! The [`Load::load`] on [`Compat`] implementation uses [`tower::load::Load`].
 
-use tower::{load::Load, ServiceExt as _};
+use tower::{ServiceExt as _, load::Load};
 
 use crate::Service;
 

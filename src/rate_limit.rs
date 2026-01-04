@@ -96,7 +96,7 @@ where
 mod tests {
     use std::time::{Duration, Instant};
 
-    use crate::{service_fn, ServiceExt};
+    use crate::{ServiceExt, service_fn};
 
     #[tokio::test]
     async fn limit() {
